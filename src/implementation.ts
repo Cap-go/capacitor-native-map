@@ -14,6 +14,7 @@ import type {
   Polyline,
   TileOverlay,
 } from './definitions';
+import { shouldRouteTouchToMap } from './touch-routing';
 
 /**
  * An interface containing the options used when creating a map.
@@ -33,9 +34,10 @@ export interface CreateMapArgs {
    */
   config: NativeMapConfig;
   /**
-   * The DOM element that the Google Map View will be mounted on which determines size and positioning.
+   * The DOM element that determines size and positioning for embedded maps.
+   * Optional when `toBack` is `true` (defaults to `document.body`).
    */
-  element: HTMLElement;
+  element?: HTMLElement;
   /**
    * Destroy and re-create the map instance if a map with the supplied id already exists
    * @default false
@@ -54,6 +56,45 @@ export interface CreateMapArgs {
    * Only available for web.
    */
   language?: string;
+  /**
+   * When `true`, renders the native map behind a transparent WebView so your HTML UI
+   * can sit on top. Touches on transparent web areas pass through to the map,
+   * including multi-touch gestures (pinch zoom, rotate, two-finger tilt, pan).
+   * Touches on interactive HTML elements stay in the WebView.
+   *
+   * On native platforms, set `config.x`, `config.y`, `config.width`, and `config.height`
+   * for position and size (defaults to the viewport when omitted). Use {@link NativeMap.updateLayout}
+   * to change layout at runtime.
+   *
+   * @default false
+   */
+  toBack?: boolean;
+}
+
+/**
+ * Layout rectangle for {@link NativeMapPlugin.updateLayout}, in CSS pixels relative to the WebView.
+ */
+export interface MapLayoutArgs {
+  /**
+   * Map instance id returned from {@link NativeMap.create}.
+   */
+  id: string;
+  /**
+   * Distance from the left edge of the WebView, in CSS pixels.
+   */
+  x?: number;
+  /**
+   * Distance from the top edge of the WebView, in CSS pixels.
+   */
+  y?: number;
+  /**
+   * Map width in CSS pixels.
+   */
+  width?: number;
+  /**
+   * Map height in CSS pixels.
+   */
+  height?: number;
 }
 
 export interface DestroyMapArgs {
@@ -216,6 +257,19 @@ export interface NativeMapPlugin extends Plugin {
   fitBounds(args: FitBoundsArgs): Promise<void>;
   mapBoundsContains(args: MapBoundsContainsArgs): Promise<{ contains: boolean }>;
   mapBoundsExtend(args: MapBoundsExtendArgs): Promise<{ bounds: LatLngBounds }>;
+  /**
+   * Updates the native map position and size without recreating the map.
+   * Useful with `toBack` mode to resize or reposition the map layer.
+   */
+  updateLayout(args: MapLayoutArgs): Promise<void>;
+  /**
+   * Shows a map that was hidden with {@link NativeMapPlugin.hide}.
+   */
+  show(args: { id: string }): Promise<void>;
+  /**
+   * Hides the native map view while keeping the instance alive.
+   */
+  hide(args: { id: string }): Promise<void>;
 }
 
 const CapacitorNativeMap = registerPlugin<NativeMapPlugin>('NativeMap', {
@@ -223,15 +277,12 @@ const CapacitorNativeMap = registerPlugin<NativeMapPlugin>('NativeMap', {
 });
 
 CapacitorNativeMap.addListener('isMapInFocus', (data) => {
-  const x = data.x;
-  const y = data.y;
-
-  const elem = document.elementFromPoint(x, y) as HTMLElement | null;
-  const mapElement = elem?.closest('[data-internal-id]') as HTMLElement | null;
-  const internalId = mapElement?.dataset?.internalId;
-  const mapInFocus = internalId === data.mapId;
-
-  CapacitorNativeMap.dispatchMapEvent({ id: data.mapId, focus: mapInFocus });
+  const x = data.x as number;
+  const y = data.y as number;
+  const mapId = data.mapId as string;
+  const toBack = data.toBack === true;
+  const mapInFocus = shouldRouteTouchToMap(x, y, mapId, toBack);
+  CapacitorNativeMap.dispatchMapEvent({ id: mapId, focus: mapInFocus });
 });
 
 export { CapacitorNativeMap };

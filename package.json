@@ -1,6 +1,6 @@
 {
   "name": "@capgo/capacitor-native-map",
-  "version": "0.0.1",
+  "version": "8.0.0",
   "description": "Native maps for Capacitor: Google Maps on Android, Apple MapKit on iOS, Google Maps JS on web",
   "license": "MPL-2.0",
   "main": "dist/plugin.cjs.js",
@@ -15,7 +15,11 @@
     "ios/Tests",
     "Package.swift",
     "CapgoCapacitorNativeMap.podspec",
-    "assets/readme-demo.webp"
+    "assets/readme-demo.webp",
+    "assets/readme-screenshot-ios.webp",
+    "assets/readme-screenshot-android.webp",
+    "assets/github-social-preview.png",
+    "assets/github-social-template.svg"
   ],
   "author": "Martin Donadieu",
   "repository": {
@@ -81,7 +85,7 @@
     "rimraf": "^6.1.0",
     "rollup": "^4.53.2",
     "swiftlint": "^2.0.0",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
     "@capacitor/core": ">=8.0.0"

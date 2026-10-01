@@ -29,6 +29,14 @@ export interface NativeMapInterface {
   create(options: CreateMapArgs, callback?: MapListenerCallback<MapReadyCallbackData>): Promise<NativeMap>;
   enableTouch(): Promise<void>;
   disableTouch(): Promise<void>;
+  /**
+   * Updates native map position and size (CSS pixels). Especially useful in `toBack` mode.
+   */
+  updateLayout(layout: { x?: number; y?: number; width?: number; height?: number }): Promise<void>;
+  /** Shows the native map after {@link NativeMap.hide}. */
+  show(): Promise<void>;
+  /** Hides the native map without destroying it. */
+  hide(): Promise<void>;
   enableClustering(
     /**
      * The minimum number of markers that can be clustered together. The default is 4 markers.
@@ -115,6 +123,8 @@ customElements.define('capacitor-native-map', MapCustomElement);
 export class NativeMap {
   private id: string;
   private element: HTMLElement | null = null;
+  private toBack = false;
+  private windowResizeHandler?: () => void;
   private resizeObserver: ResizeObserver | null = null;
   private orientationChangeTimeoutId?: ReturnType<typeof setTimeout>;
   private orientationChangeHandler = (): void => {
@@ -160,22 +170,42 @@ export class NativeMap {
   ): Promise<NativeMap> {
     const newMap = new NativeMap(options.id);
 
-    if (!options.element) {
+    const toBack = options.toBack === true;
+    newMap.toBack = toBack;
+
+    const hostElement = options.element ?? document.body;
+    if (!hostElement) {
       throw new Error('container element is required');
     }
 
     const createOptions: CreateMapArgs = {
       ...options,
+      toBack,
       config: {
         ...options.config,
         androidLiteMode: options.config.androidLiteMode ?? false,
       },
     };
 
-    newMap.element = options.element;
-    newMap.element.dataset.internalId = options.id;
+    newMap.element = hostElement;
+    if (!toBack) {
+      newMap.element.dataset.internalId = options.id;
+    } else {
+      document.documentElement.classList.add('native-map-to-back');
+      document.body.classList.add('native-map-to-back');
+    }
 
-    const elementBounds = await NativeMap.getElementBounds(options.element);
+    let elementBounds: DOMRect;
+    if (toBack) {
+      elementBounds = new DOMRect(
+        options.config.x ?? 0,
+        options.config.y ?? 0,
+        options.config.width ?? window.innerWidth,
+        options.config.height ?? window.innerHeight,
+      );
+    } else {
+      elementBounds = await NativeMap.getElementBounds(hostElement);
+    }
     createOptions.config.width = elementBounds.width;
     createOptions.config.height = elementBounds.height;
     createOptions.config.x = elementBounds.x;
@@ -188,15 +218,7 @@ export class NativeMap {
     if (Capacitor.isNativePlatform()) {
       createOptions.element = {} as HTMLElement;
 
-      const getMapBounds = () => {
-        const mapRect = newMap.element?.getBoundingClientRect() ?? ({} as DOMRect);
-        return {
-          x: mapRect.x,
-          y: mapRect.y,
-          width: mapRect.width,
-          height: mapRect.height,
-        };
-      };
+      const getMapBounds = () => NativeMap.layoutBoundsForElement(newMap.element, toBack);
 
       const onDisplay = () => {
         CapacitorNativeMap.onDisplay({
@@ -231,27 +253,32 @@ export class NativeMap {
         height: elementBounds.height,
         isHidden: false,
       };
-      newMap.resizeObserver = new ResizeObserver(() => {
-        if (newMap.element != null) {
-          const mapRect = newMap.element.getBoundingClientRect();
+      if (toBack) {
+        newMap.windowResizeHandler = onResize;
+        window.addEventListener('resize', onResize);
+      } else {
+        newMap.resizeObserver = new ResizeObserver(() => {
+          if (newMap.element != null) {
+            const mapRect = newMap.element.getBoundingClientRect();
 
-          const isHidden = mapRect.width === 0 && mapRect.height === 0;
-          if (!isHidden) {
-            if (lastState.isHidden) {
-              if (Capacitor.getPlatform() === 'ios' && !ionicPage) {
-                onDisplay();
+            const isHidden = mapRect.width === 0 && mapRect.height === 0;
+            if (!isHidden) {
+              if (lastState.isHidden) {
+                if (Capacitor.getPlatform() === 'ios' && !ionicPage) {
+                  onDisplay();
+                }
+              } else if (lastState.width !== mapRect.width || lastState.height !== mapRect.height) {
+                onResize();
               }
-            } else if (lastState.width !== mapRect.width || lastState.height !== mapRect.height) {
-              onResize();
             }
-          }
 
-          lastState.width = mapRect.width;
-          lastState.height = mapRect.height;
-          lastState.isHidden = isHidden;
-        }
-      });
-      newMap.resizeObserver.observe(newMap.element);
+            lastState.width = mapRect.width;
+            lastState.height = mapRect.height;
+            lastState.isHidden = isHidden;
+          }
+        });
+        newMap.resizeObserver.observe(newMap.element);
+      }
     }
 
     let onMapReadyListener: PluginListenerHandle | undefined;
@@ -323,6 +350,24 @@ export class NativeMap {
     return CapacitorNativeMap.disableTouch({
       id: this.id,
     });
+  }
+
+  async updateLayout(layout: { x?: number; y?: number; width?: number; height?: number }): Promise<void> {
+    await CapacitorNativeMap.updateLayout({
+      id: this.id,
+      ...layout,
+    });
+    if (layout.width != null || layout.height != null || layout.x != null || layout.y != null) {
+      this.updateMapBounds();
+    }
+  }
+
+  async show(): Promise<void> {
+    return CapacitorNativeMap.show({ id: this.id });
+  }
+
+  async hide(): Promise<void> {
+    return CapacitorNativeMap.hide({ id: this.id });
   }
 
   /**
@@ -493,6 +538,15 @@ export class NativeMap {
 
     if (Capacitor.isNativePlatform()) {
       this.resizeObserver?.disconnect();
+      if (this.windowResizeHandler) {
+        window.removeEventListener('resize', this.windowResizeHandler);
+        this.windowResizeHandler = undefined;
+      }
+    }
+
+    if (this.toBack) {
+      document.documentElement.classList.remove('native-map-to-back');
+      document.body.classList.remove('native-map-to-back');
     }
 
     this.removeAllMapListeners();
@@ -668,18 +722,27 @@ export class NativeMap {
 
   private updateMapBounds(): void {
     if (this.element) {
-      const mapRect = this.element.getBoundingClientRect();
-
       CapacitorNativeMap.onScroll({
         id: this.id,
-        mapBounds: {
-          x: mapRect.x,
-          y: mapRect.y,
-          width: mapRect.width,
-          height: mapRect.height,
-        },
+        mapBounds: NativeMap.layoutBoundsForElement(this.element, this.toBack),
       });
     }
+  }
+
+  private static layoutBoundsForElement(
+    element: HTMLElement | null,
+    toBack: boolean,
+  ): { x: number; y: number; width: number; height: number } {
+    if (toBack) {
+      return { x: 0, y: 0, width: window.innerWidth, height: window.innerHeight };
+    }
+    const mapRect = element?.getBoundingClientRect() ?? ({} as DOMRect);
+    return {
+      x: mapRect.x,
+      y: mapRect.y,
+      width: mapRect.width,
+      height: mapRect.height,
+    };
   }
 
   /*

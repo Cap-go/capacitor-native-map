@@ -97,10 +97,10 @@ struct NativeMapConfig {
     let zoom: Double
     let minZoom: Double?
     let maxZoom: Double?
-    let x: Double
-    let y: Double
-    let width: Double
-    let height: Double
+    var x: Double
+    var y: Double
+    var width: Double
+    var height: Double
     let clustering: Bool
     let mapType: String
     let showInfoWindows: Bool
@@ -164,6 +164,8 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
     let id: String
     var config: NativeMapConfig
     let mapView: MKMapView
+    var toBack: Bool = false
+    var isMapVisible: Bool = true
 
     var markers: [String: NativeMapMarker] = [:]
     /// Overlays keyed by the id handed back to JS, for removal.
@@ -228,11 +230,12 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
     /// a later render can retry it).
     var failedIconURLs: Set<String> = []
 
-    init(id: String, config: NativeMapConfig, delegate: NativeMapPlugin) {
+    init(id: String, config: NativeMapConfig, delegate: NativeMapPlugin, toBack: Bool = false) {
         self.id = id
         self.config = config
         self.mapView = MKMapView()
         self.delegate = delegate
+        self.toBack = toBack
         super.init()
         // Start clustered when the caller asked for it, so markers added later
         // cluster on their first render instead of flashing as individual pins.
@@ -279,6 +282,20 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
             markerDrag.delegate = self
             self.mapView.addGestureRecognizer(markerDrag)
 
+            if self.toBack, let webView = self.delegate?.bridge?.webView {
+                self.mapView.frame = CGRect(
+                    x: self.config.x,
+                    y: self.config.y,
+                    width: self.config.width,
+                    height: self.config.height
+                )
+                self.mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                webView.addSubview(self.mapView)
+                webView.sendSubviewToBack(self.mapView)
+                ToBackCompositor.applyTransparentWebView(webView)
+                self.targetView = webView
+                self.mapView.isHidden = !self.isMapVisible
+            } else {
             self.targetView = self.getTargetContainer(refWidth: self.config.width, refHeight: self.config.height)
             if let target = self.targetView {
                 target.tag = Map.mapTag
@@ -297,6 +314,7 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
                                 + "(ref=\(self.config.width)x\(self.config.height)); map will not render. "
                                 + "Likely a WebKit view-tree change - inspect the WKWebView's scroll views.")
             }
+            }
 
             self.delegate?.notifyListeners("onMapReady", data: ["mapId": self.id])
         }
@@ -308,6 +326,23 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
             self.mapView.removeFromSuperview()
             self.mapView.delegate = nil
             self.targetView?.tag = 0
+        }
+    }
+
+    func updateLayout(bounds: CGRect) {
+        config.x = bounds.origin.x
+        config.y = bounds.origin.y
+        config.width = bounds.size.width
+        config.height = bounds.size.height
+        runOnMainSync {
+            self.mapView.frame = bounds
+        }
+    }
+
+    func setMapVisible(_ visible: Bool) {
+        isMapVisible = visible
+        runOnMainSync {
+            self.mapView.isHidden = !visible
         }
     }
 

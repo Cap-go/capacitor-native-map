@@ -1,23 +1,41 @@
 # @capgo/capacitor-native-map
 
-**One TypeScript API for native maps in Capacitor apps** — Google Maps on Android, Apple MapKit on iOS, and Google Maps JS on the web. Ship the same markers, camera, overlays, clustering, search, and events everywhere without maintaining three separate integrations.
+<a href="https://capgo.app/"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-native-map" alt="Capgo - Instant updates for Capacitor" /></a>
+
+<div align="center">
+  <h2><a href="https://capgo.app/?ref=plugin_native_map"> ➡️ Get instant updates for your app with Capgo</a></h2>
+  <h2><a href="https://capgo.app/consulting/?ref=plugin_native_map"> Missing a feature? We can build the plugin for you</a></h2>
+</div>
+
+![NPM Version](https://img.shields.io/npm/v/%40capgo%2Fcapacitor-native-map)
+![NPM Downloads](https://img.shields.io/npm/dy/%40capgo%2Fcapacitor-native-map)
+![GitHub Repo stars](https://img.shields.io/github/stars/Cap-go/capacitor-native-map)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/Cap-go/capacitor-native-map/.github%2Fworkflows%2Ftest.yml)
+![GitHub License](https://img.shields.io/github/license/Cap-go/capacitor-native-map)
+![Maintenance](https://img.shields.io/maintenance/yes/2026)
+
+**One TypeScript API for native maps in Capacitor apps:** Google Maps on Android, Apple MapKit on iOS, and Google Maps JS on the web. Ship markers, camera moves, shapes, clustering, search, and events from a single integration.
 
 <p align="center">
-  <img src="assets/readme-demo.webp" width="360" alt="Native map in a Capacitor app" />
+  <img src="assets/readme-screenshot-ios.webp" width="280" alt="Native map with HTML overlay on iOS" />
+  <img src="assets/readme-screenshot-android.webp" width="280" alt="Native map with HTML overlay on Android" />
 </p>
+
+Docs: [Native Map plugin](https://capgo.app/docs/plugins/native-map/) · Tutorial: [capacitor-native-map](https://capgo.app/plugins/capacitor-native-map/)
 
 ## Why use it
 
-- **Single API** across iOS, Android, and web (`NativeMap.create`, shared listeners, shared types).
-- **Native performance** where it matters: platform map views under your HTML, not a slow WebView map on mobile.
-- **Feature parity** for common product needs: markers (incl. remote icons), shapes, clustering, camera bounds, padding, snapshots, geocoding/search helpers, and current location.
-- **Capacitor 8** and modern TypeScript tooling in the included example app.
+- **Single API** on iOS, Android, and web (`NativeMap.create`, shared listeners, shared types).
+- **Native map performance** on mobile (platform map views, not a WebView map).
+- **Custom map UI** with `toBack`: render the native map behind a transparent WebView and build controls in HTML.
+- **Capacitor 8** with TypeScript 6 and an example app you can run locally.
 
 ## Features
 
 | Area | Highlights |
 | --- | --- |
-| **Map lifecycle** | Create, destroy, resize, scroll sync with Ionic/WebView |
+| **Map lifecycle** | Create, destroy, resize, `show` / `hide`, `updateLayout`, scroll sync with Ionic |
+| **Background mode** | `toBack` compositing, multi-touch passthrough on transparent HTML (pinch, rotate, tilt, pan) |
 | **Camera** | Center, zoom, bearing, tilt, fit bounds, min/max zoom |
 | **Markers** | Add/update/remove, drag, selection, callouts, clustering |
 | **Overlays** | Polygons, polylines, circles, tile overlays (platform-dependent) |
@@ -29,40 +47,17 @@
 - Store locators and field-service maps with live GPS
 - Delivery and fleet dashboards with markers and routes
 - Event venues, real-estate listings, and travel apps
-- Any Capacitor app that today embeds Google Maps on Android/web and needs a **zero–Google-keys iOS** path via MapKit
+- Custom-branded map UIs (search bars, filters, bottom sheets) over a native map
 
-## Quick start
+## Compatibility
 
-```bash
-npm install @capgo/capacitor-native-map
-npx cap sync
-```
+| Platform | Map engine | API key |
+| --- | --- | --- |
+| **iOS** | Apple MapKit | Not required for the map |
+| **Android** | Google Maps SDK | `GOOGLE_MAPS_API_KEY` in the app manifest |
+| **Web** | Google Maps JavaScript API | `apiKey` + `config.mapId` on `create` |
 
-```ts
-import { NativeMap } from '@capgo/capacitor-native-map';
-
-const map = await NativeMap.create({
-  id: 'main-map',
-  element: document.getElementById('map')!,
-  apiKey: 'YOUR_GOOGLE_MAPS_API_KEY', // web + Android
-  config: {
-    center: { lat: 37.7749, lng: -122.4194 },
-    zoom: 12,
-  },
-});
-
-map.setOnMapClickListener((e) => console.log('click', e));
-```
-
-**Platform keys**
-
-- **iOS**: MapKit — no Google API key; add location usage strings in `Info.plist` if you use current location.
-- **Android**: Google Maps SDK — set `GOOGLE_MAPS_API_KEY` in the app manifest (see `example-app`).
-- **Web**: Google Maps JS + Map ID for Advanced Markers — pass `apiKey` and `config.mapId` to `create`.
-
-The [example app](./example-app) is the fastest way to run on all three platforms.
-
-Credits: portions adapted from [katamalabs/capacitor-plugin-apple-maps](https://github.com/katamalabs/capacitor-plugin-apple-maps) and [ionic-team/capacitor-google-maps](https://github.com/ionic-team/capacitor-google-maps) (both MIT).
+Requires **Capacitor 8+**. Plugin major version follows Capacitor (this package is **v8**).
 
 ## Install
 
@@ -70,6 +65,150 @@ Credits: portions adapted from [katamalabs/capacitor-plugin-apple-maps](https://
 npm install @capgo/capacitor-native-map
 npx cap sync
 ```
+
+## iOS (MapKit)
+
+No Google Maps API key is required on iOS. Add location usage strings to `Info.plist` if you enable current location:
+
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We use your location to show you on the map.</string>
+```
+
+Sync the plugin with CocoaPods or Swift Package Manager (both are supported).
+
+## Android (Google Maps)
+
+1. Create a Google Maps SDK for Android key in [Google Cloud Console](https://console.cloud.google.com/).
+2. Set the key on the application `meta-data` entry (see `example-app/android/app/src/main/AndroidManifest.xml`):
+
+```xml
+<meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="${GOOGLE_MAPS_API_KEY}" />
+```
+
+3. Provide `GOOGLE_MAPS_API_KEY` when building (Gradle placeholder in `example-app/android/app/build.gradle`).
+
+## Usage
+
+### Embedded map
+
+```ts
+import { NativeMap } from '@capgo/capacitor-native-map';
+
+const map = await NativeMap.create({
+  id: 'main-map',
+  element: document.getElementById('map')!,
+  apiKey: 'YOUR_GOOGLE_MAPS_API_KEY',
+  config: {
+    center: { lat: 37.7749, lng: -122.4194 },
+    zoom: 12,
+  },
+});
+
+map.setOnMapClickListener((e) => console.log('click', e.latitude, e.longitude));
+```
+
+### Background map (`toBack`) with HTML overlay
+
+```ts
+const map = await NativeMap.create({
+  id: 'overlay-map',
+  toBack: true,
+  apiKey: 'YOUR_GOOGLE_MAPS_API_KEY',
+  config: {
+    center: { lat: 37.7749, lng: -122.4194 },
+    zoom: 12,
+    x: 0,
+    y: 0,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
+});
+
+await map.updateLayout({ x: 0, y: 0, width: window.innerWidth, height: window.innerHeight });
+await map.hide();
+await map.show();
+```
+
+The [example app](./example-app) opens in **overlay (`toBack`)** mode by default.
+
+## Build your own map UI
+
+Product teams often want a **fully custom map screen** (brand colors, filters, bottom sheets) while keeping native map performance. This plugin supports that pattern:
+
+1. Call `NativeMap.create({ toBack: true, ... })` so MapKit or Google Maps renders **behind** the Capacitor WebView.
+2. Make the WebView and page background **transparent** so the map is visible.
+3. Build controls in HTML. Use `data-map-overlay` (or interactive elements) on controls that must receive touches; transparent areas pass gestures to the map.
+
+### Transparent app / page CSS
+
+```css
+html.native-map-to-back,
+body.native-map-to-back {
+  background: transparent !important;
+}
+
+:root {
+  --ion-background-color: transparent !important;
+}
+
+.map-overlay-root {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+
+.map-overlay-root [data-map-overlay] {
+  pointer-events: auto;
+}
+```
+
+### Full HTML overlay example
+
+```html
+<div class="map-overlay-root" data-native-map-overlay-root>
+  <header class="hud" data-map-overlay>
+    <h1>Nearby stores</h1>
+    <button type="button" id="recenter">Recenter</button>
+  </header>
+  <footer class="sheet" data-map-overlay>
+    <p>Pinch and pan on open areas to move the map.</p>
+  </footer>
+</div>
+```
+
+```ts
+const map = await NativeMap.create({
+  id: 'stores-map',
+  toBack: true,
+  apiKey: GOOGLE_KEY,
+  config: {
+    center: { lat: 40.7128, lng: -74.006 },
+    zoom: 11,
+    width: window.innerWidth,
+    height: window.innerHeight,
+  },
+});
+
+document.getElementById('recenter')?.addEventListener('click', () => {
+  map.setCamera({ coordinate: { lat: 40.7128, lng: -74.006 }, zoom: 13, animate: true });
+});
+```
+
+## Example app
+
+```bash
+cd example-app
+bun install
+bun run build
+bunx cap sync
+```
+
+Set `VITE_GOOGLE_MAPS_API_KEY` for web and Android. iOS uses MapKit without a Google key.
+
+Credits: portions adapted from [katamalabs/capacitor-plugin-apple-maps](https://github.com/katamalabs/capacitor-plugin-apple-maps) and [ionic-team/capacitor-google-maps](https://github.com/ionic-team/capacitor-google-maps) (both MIT).
 
 ## API
 
@@ -539,6 +678,52 @@ mapBoundsExtend(args: MapBoundsExtendArgs) => Promise<{ bounds: LatLngBounds; }>
 --------------------
 
 
+### updateLayout(...)
+
+```typescript
+updateLayout(args: MapLayoutArgs) => Promise<void>
+```
+
+Updates the native map position and size without recreating the map.
+Useful with `toBack` mode to resize or reposition the map layer.
+
+| Param      | Type                                                    |
+| ---------- | ------------------------------------------------------- |
+| **`args`** | <code><a href="#maplayoutargs">MapLayoutArgs</a></code> |
+
+--------------------
+
+
+### show(...)
+
+```typescript
+show(args: { id: string; }) => Promise<void>
+```
+
+Shows a map that was hidden with {@link NativeMapPlugin.hide}.
+
+| Param      | Type                         |
+| ---------- | ---------------------------- |
+| **`args`** | <code>{ id: string; }</code> |
+
+--------------------
+
+
+### hide(...)
+
+```typescript
+hide(args: { id: string; }) => Promise<void>
+```
+
+Hides the native map view while keeping the instance alive.
+
+| Param      | Type                         |
+| ---------- | ---------------------------- |
+| **`args`** | <code>{ id: string; }</code> |
+
+--------------------
+
+
 ### Interfaces
 
 
@@ -546,15 +731,16 @@ mapBoundsExtend(args: MapBoundsExtendArgs) => Promise<{ bounds: LatLngBounds; }>
 
 An interface containing the options used when creating a map.
 
-| Prop              | Type                                                        | Description                                                                                                                                                                            | Default            |
-| ----------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| **`id`**          | <code>string</code>                                         | A unique identifier for the map instance.                                                                                                                                              |                    |
-| **`apiKey`**      | <code>string</code>                                         | Google Maps API key. Required on web. On Android, also set `com.google.android.geo.API_KEY` in the app manifest. Not used on iOS (MapKit).                                             |                    |
-| **`config`**      | <code><a href="#nativemapconfig">NativeMapConfig</a></code> | The initial configuration settings for the map.                                                                                                                                        |                    |
-| **`element`**     | <code>HTMLElement</code>                                    | The DOM element that the Google Map View will be mounted on which determines size and positioning.                                                                                     |                    |
-| **`forceCreate`** | <code>boolean</code>                                        | Destroy and re-create the map instance if a map with the supplied id already exists                                                                                                    | <code>false</code> |
-| **`region`**      | <code>string</code>                                         | The region parameter alters your application to serve different map tiles or bias the application (such as biasing geocoding results towards the region). Only available for web.      |                    |
-| **`language`**    | <code>string</code>                                         | The language parameter affects the names of controls, copyright notices, driving directions, and control labels, as well as the responses to service requests. Only available for web. |                    |
+| Prop              | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Default            |
+| ----------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
+| **`id`**          | <code>string</code>                                         | A unique identifier for the map instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                    |
+| **`apiKey`**      | <code>string</code>                                         | Google Maps API key. Required on web. On Android, also set `com.google.android.geo.API_KEY` in the app manifest. Not used on iOS (MapKit).                                                                                                                                                                                                                                                                                                                                                                          |                    |
+| **`config`**      | <code><a href="#nativemapconfig">NativeMapConfig</a></code> | The initial configuration settings for the map.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                    |
+| **`element`**     | <code>HTMLElement</code>                                    | The DOM element that determines size and positioning for embedded maps. Optional when `toBack` is `true` (defaults to `document.body`).                                                                                                                                                                                                                                                                                                                                                                             |                    |
+| **`forceCreate`** | <code>boolean</code>                                        | Destroy and re-create the map instance if a map with the supplied id already exists                                                                                                                                                                                                                                                                                                                                                                                                                                 | <code>false</code> |
+| **`region`**      | <code>string</code>                                         | The region parameter alters your application to serve different map tiles or bias the application (such as biasing geocoding results towards the region). Only available for web.                                                                                                                                                                                                                                                                                                                                   |                    |
+| **`language`**    | <code>string</code>                                         | The language parameter affects the names of controls, copyright notices, driving directions, and control labels, as well as the responses to service requests. Only available for web.                                                                                                                                                                                                                                                                                                                              |                    |
+| **`toBack`**      | <code>boolean</code>                                        | When `true`, renders the native map behind a transparent WebView so your HTML UI can sit on top. Touches on transparent web areas pass through to the map, including multi-touch gestures (pinch zoom, rotate, two-finger tilt, pan). Touches on interactive HTML elements stay in the WebView. On native platforms, set `config.x`, `config.y`, `config.width`, and `config.height` for position and size (defaults to the viewport when omitted). Use {@link NativeMap.updateLayout} to change layout at runtime. | <code>false</code> |
 
 
 #### NativeMapConfig
@@ -651,6 +837,8 @@ A marker is an icon placed at a particular point on the map's surface.
 
 
 #### Size
+
+Width and height in pixels.
 
 | Prop         | Type                |
 | ------------ | ------------------- |
@@ -925,6 +1113,19 @@ Controls for setting padding on the 'visible' region of the view.
 | ------------ | ----------------------------------------- |
 | **`bounds`** | <code>LatLngBounds</code>                 |
 | **`point`**  | <code><a href="#latlng">LatLng</a></code> |
+
+
+#### MapLayoutArgs
+
+Layout rectangle for {@link NativeMapPlugin.updateLayout}, in CSS pixels relative to the WebView.
+
+| Prop         | Type                | Description                                                |
+| ------------ | ------------------- | ---------------------------------------------------------- |
+| **`id`**     | <code>string</code> | Map instance id returned from {@link NativeMap.create}.    |
+| **`x`**      | <code>number</code> | Distance from the left edge of the WebView, in CSS pixels. |
+| **`y`**      | <code>number</code> | Distance from the top edge of the WebView, in CSS pixels.  |
+| **`width`**  | <code>number</code> | Map width in CSS pixels.                                   |
+| **`height`** | <code>number</code> | Map height in CSS pixels.                                  |
 
 
 ### Type Aliases

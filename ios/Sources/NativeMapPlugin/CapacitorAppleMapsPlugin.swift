@@ -70,7 +70,10 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
         CAPPluginMethod(name: "removePolylines", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "mapBoundsContains", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "mapBoundsExtend", returnType: CAPPluginReturnPromise),
-        CAPPluginMethod(name: "dispatchMapEvent", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "dispatchMapEvent", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "updateLayout", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "show", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "hide", returnType: CAPPluginReturnPromise)
     ]
 
     var maps = [String: Map]()
@@ -91,6 +94,7 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
     // MARK: - App lifecycle
 
     override public func load() {
+        WKWebView.registerTouchRouting(plugin: self)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleDidBecomeActive),
@@ -138,7 +142,8 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
                     }
                     self.maps.removeValue(forKey: id)?.destroy()
                 }
-                self.maps[id] = Map(id: id, config: config, delegate: self)
+                let toBack = call.getBool("toBack", false)
+                self.maps[id] = Map(id: id, config: config, delegate: self, toBack: toBack)
                 self.mapsLock.unlock()
             }
             if alreadyExists {

@@ -148,6 +148,40 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     this.maps[_args.id].map.setOptions({ gestureHandling: 'none' });
   }
 
+  async updateLayout(_args: { id: string; x?: number; y?: number; width?: number; height?: number }): Promise<void> {
+    const entry = this.maps[_args.id];
+    if (!entry) {
+      return;
+    }
+    const el = entry.element;
+    if (_args.x != null) {
+      el.style.left = `${_args.x}px`;
+    }
+    if (_args.y != null) {
+      el.style.top = `${_args.y}px`;
+    }
+    if (_args.width != null) {
+      el.style.width = `${_args.width}px`;
+    }
+    if (_args.height != null) {
+      el.style.height = `${_args.height}px`;
+    }
+  }
+
+  async show(args: { id: string }): Promise<void> {
+    const entry = this.maps[args.id];
+    if (entry) {
+      entry.element.style.visibility = 'visible';
+    }
+  }
+
+  async hide(args: { id: string }): Promise<void> {
+    const entry = this.maps[args.id];
+    if (entry) {
+      entry.element.style.visibility = 'hidden';
+    }
+  }
+
   async setCamera(_args: CameraArgs): Promise<void> {
     // Animation not supported yet...
     this.maps[_args.id].map.moveCamera({
@@ -527,8 +561,8 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     }
 
     this.maps[_args.id] = {
-      map: new window.google.maps.Map(_args.element, config),
-      element: _args.element,
+      map: new window.google.maps.Map(_args.element ?? document.body, config),
+      element: _args.element ?? document.body,
       markers: {},
       tileOverlays: {},
       polygons: {},

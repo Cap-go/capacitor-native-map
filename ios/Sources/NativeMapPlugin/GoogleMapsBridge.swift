@@ -119,4 +119,35 @@ extension NativeMapPlugin {
     @objc func dispatchMapEvent(_ call: CAPPluginCall) {
         call.resolve()
     }
+
+    @objc func updateLayout(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let map = maps[id] else {
+            call.reject("map not found", PluginError.mapNotFound)
+            return
+        }
+        let x = call.getDouble("x") ?? map.config.x
+        let y = call.getDouble("y") ?? map.config.y
+        let width = call.getDouble("width") ?? map.config.width
+        let height = call.getDouble("height") ?? map.config.height
+        map.updateLayout(bounds: CGRect(x: x, y: y, width: width, height: height))
+        call.resolve()
+    }
+
+    @objc func show(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let map = maps[id] else {
+            call.reject("map not found", PluginError.mapNotFound)
+            return
+        }
+        map.setMapVisible(true)
+        call.resolve()
+    }
+
+    @objc func hide(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let map = maps[id] else {
+            call.reject("map not found", PluginError.mapNotFound)
+            return
+        }
+        map.setMapVisible(false)
+        call.resolve()
+    }
 }

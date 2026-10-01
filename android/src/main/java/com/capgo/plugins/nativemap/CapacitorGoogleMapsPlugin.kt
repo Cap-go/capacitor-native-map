@@ -83,6 +83,7 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
                                     payload.put("x", touchX / map.config.devicePixelRatio)
                                     payload.put("y", touchY / map.config.devicePixelRatio)
                                     payload.put("mapId", map.id)
+                                    payload.put("toBack", map.toBack)
 
                                     notifyListeners("isMapInFocus", payload)
                                     return true
@@ -155,7 +156,9 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
                 oldMap?.destroy()
             }
 
+            val toBack = call.getBoolean("toBack", false)!!
             val newMap = CapacitorNativeMapView(id, config, this)
+            newMap.toBack = toBack
             maps[id] = newMap
 
             call.resolve()
@@ -178,6 +181,58 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             val removedMap = maps.remove(id) ?: throw MapNotFoundError()
             removedMap.destroy()
 
+            call.resolve()
+        } catch (e: NativeMapsError) {
+            handleError(call, e)
+        } catch (e: Exception) {
+            handleError(call, e)
+        }
+    }
+
+    @PluginMethod
+    fun updateLayout(call: PluginCall) {
+        try {
+            val id = call.getString("id")
+            id ?: throw InvalidMapIdError()
+
+            val map = maps[id] ?: throw MapNotFoundError()
+
+            val x = call.getInt("x", map.config.x)
+            val y = call.getInt("y", map.config.y)
+            val width = call.getInt("width", map.config.width)
+            val height = call.getInt("height", map.config.height)
+
+            map.updateLayout(x, y, width, height)
+            call.resolve()
+        } catch (e: NativeMapsError) {
+            handleError(call, e)
+        } catch (e: Exception) {
+            handleError(call, e)
+        }
+    }
+
+    @PluginMethod
+    fun show(call: PluginCall) {
+        try {
+            val id = call.getString("id")
+            id ?: throw InvalidMapIdError()
+            val map = maps[id] ?: throw MapNotFoundError()
+            map.setVisible(true)
+            call.resolve()
+        } catch (e: NativeMapsError) {
+            handleError(call, e)
+        } catch (e: Exception) {
+            handleError(call, e)
+        }
+    }
+
+    @PluginMethod
+    fun hide(call: PluginCall) {
+        try {
+            val id = call.getString("id")
+            id ?: throw InvalidMapIdError()
+            val map = maps[id] ?: throw MapNotFoundError()
+            map.setVisible(false)
             call.resolve()
         } catch (e: NativeMapsError) {
             handleError(call, e)

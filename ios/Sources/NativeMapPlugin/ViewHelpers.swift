@@ -14,8 +14,23 @@ import Capacitor
 // Routes touches that land on a WKChildScrollView down to the native map view
 // mounted inside it.
 extension WKWebView {
+    private static weak var touchRoutingPlugin: NativeMapPlugin?
+
+    static func registerTouchRouting(plugin: NativeMapPlugin) {
+        touchRoutingPlugin = plugin
+    }
+
     override open func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
         var hitView = super.hitTest(point, with: event)
+
+        if let plugin = WKWebView.touchRoutingPlugin,
+           let map = plugin.toBackMap(containing: point, in: self) {
+            if shouldPassTouchThroughToMap(hitView) {
+                let converted = convert(point, to: map.mapView)
+                return map.mapView.hitTest(converted, with: event) ?? hitView
+            }
+        }
+
         if let childScrollClass = NSClassFromString("WKChildScrollView"),
            let candidate = hitView, candidate.isKind(of: childScrollClass) {
             for item in candidate.subviews.reversed() {
@@ -27,6 +42,33 @@ extension WKWebView {
             }
         }
         return hitView
+    }
+}
+
+private func shouldPassTouchThroughToMap(_ hitView: UIView?) -> Bool {
+    guard let hitView = hitView else { return true }
+    if hitView is UIControl {
+        return false
+    }
+    let name = String(describing: type(of: hitView))
+    if name.contains("WK") || hitView is UIScrollView {
+        return true
+    }
+    return hitView.backgroundColor == nil || hitView.backgroundColor == .clear
+}
+
+extension NativeMapPlugin {
+    func toBackMap(containing point: CGPoint, in webView: WKWebView) -> Map? {
+        mapsLock.lock()
+        let candidates = maps.values.filter { $0.toBack && $0.isMapVisible }
+        mapsLock.unlock()
+        for map in candidates {
+            let converted = webView.convert(point, to: map.mapView)
+            if map.mapView.point(inside: converted, with: nil) {
+                return map
+            }
+        }
+        return nil
     }
 }
 

@@ -30,8 +30,20 @@ body {
   background: linear-gradient(160deg, #e0f2fe 0%, #f8fafc 100%);
 }
 
+html.native-map-to-back,
+body.native-map-to-back {
+  background: transparent !important;
+}
+
 #root {
   max-width: 960px;
   margin: 0 auto;
   padding: 3rem 1.5rem;
+}
+
+html.native-map-to-back #root {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }

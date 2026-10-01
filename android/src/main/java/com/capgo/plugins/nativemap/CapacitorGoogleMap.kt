@@ -51,6 +51,10 @@ class CapacitorNativeMapView(
 
     private val isReadyChannel = Channel<Boolean>()
     private var debounceJob: Job? = null
+    private var mapViewParent: FrameLayout? = null
+    var toBack: Boolean = false
+    var visible: Boolean = true
+    private var originalWebViewAlpha: Float? = null
 
     init {
         val bridge = delegate.bridge
@@ -73,9 +77,9 @@ class CapacitorNativeMapView(
     private fun render() {
         CoroutineScope(Dispatchers.Main).launch {
                 val bridge = delegate.bridge
-                val mapViewParent = FrameLayout(bridge.context)
-                mapViewParent.minimumHeight = bridge.webView.height
-                mapViewParent.minimumWidth = bridge.webView.width
+                val parent = FrameLayout(bridge.context)
+                parent.minimumHeight = bridge.webView.height
+                parent.minimumWidth = bridge.webView.width
 
                 val layoutParams =
                         FrameLayout.LayoutParams(
@@ -85,15 +89,23 @@ class CapacitorNativeMapView(
                 layoutParams.leftMargin = getScaledPixels(bridge, config.x)
                 layoutParams.topMargin = getScaledPixels(bridge, config.y)
 
-                mapViewParent.tag = id
+                parent.tag = id
 
                 mapView.layoutParams = layoutParams
-                mapViewParent.addView(mapView)
+                parent.addView(mapView)
 
-                ((bridge.webView.parent) as ViewGroup).addView(mapViewParent)
+                val webParent = (bridge.webView.parent) as ViewGroup
+                if (toBack) {
+                    webParent.addView(parent, 0)
+                    applyToBackVisualState(bridge)
+                } else {
+                    webParent.addView(parent)
+                    bridge.webView.bringToFront()
+                    bridge.webView.setBackgroundColor(Color.TRANSPARENT)
+                }
 
-                bridge.webView.bringToFront()
-                bridge.webView.setBackgroundColor(Color.TRANSPARENT)
+                mapViewParent = parent
+                parent.visibility = if (visible) View.VISIBLE else View.GONE
                 if (config.styles != null) {
                     googleMap?.setMapStyle(MapStyleOptions(config.styles!!))
                 }
@@ -141,18 +153,62 @@ class CapacitorNativeMapView(
 
         runBlocking {
             CoroutineScope(Dispatchers.Main).launch {
-                val bridge = delegate.bridge
-                val mapRect = getScaledRect(bridge, updatedBounds)
-                val mapView = this@CapacitorNativeMapView.mapView;
-                mapView.x = mapRect.left
-                mapView.y = mapRect.top
-                if (mapView.layoutParams.width != config.width || mapView.layoutParams.height != config.height) {
-                    mapView.layoutParams.width = getScaledPixels(bridge, config.width)
-                    mapView.layoutParams.height = getScaledPixels(bridge, config.height)
-                    mapView.requestLayout()
-                }
+                applyLayoutFromConfig()
             }
         }
+    }
+
+    fun updateLayout(x: Int, y: Int, width: Int, height: Int) {
+        config.x = x
+        config.y = y
+        config.width = width
+        config.height = height
+        CoroutineScope(Dispatchers.Main).launch {
+            applyLayoutFromConfig()
+        }
+    }
+
+    fun setVisible(isVisible: Boolean) {
+        visible = isVisible
+        CoroutineScope(Dispatchers.Main).launch {
+            mapViewParent?.visibility = if (isVisible) View.VISIBLE else View.GONE
+        }
+    }
+
+    private fun applyLayoutFromConfig() {
+        val bridge = delegate.bridge
+        val parent = mapViewParent ?: return
+        val layoutParams = parent.layoutParams as? FrameLayout.LayoutParams
+            ?: FrameLayout.LayoutParams(
+                getScaledPixels(bridge, config.width),
+                getScaledPixels(bridge, config.height),
+            )
+        layoutParams.width = getScaledPixels(bridge, config.width)
+        layoutParams.height = getScaledPixels(bridge, config.height)
+        layoutParams.leftMargin = getScaledPixels(bridge, config.x)
+        layoutParams.topMargin = getScaledPixels(bridge, config.y)
+        parent.layoutParams = layoutParams
+        mapView.layoutParams.width = layoutParams.width
+        mapView.layoutParams.height = layoutParams.height
+        parent.requestLayout()
+    }
+
+    private fun applyToBackVisualState(bridge: Bridge) {
+        val webView = bridge.webView
+        if (originalWebViewAlpha == null) {
+            originalWebViewAlpha = webView.alpha
+        }
+        if (ToBackCompositorHelper.shouldTransparentizeWebViewParent()) {
+            (webView.parent as? View)?.setBackgroundColor(ToBackCompositorHelper.resolveWebViewBackgroundColor())
+        }
+        webView.setBackgroundColor(ToBackCompositorHelper.resolveWebViewBackgroundColor())
+        webView.setLayerType(ToBackCompositorHelper.resolveWebViewLayerType(), null)
+        val alpha = ToBackCompositorHelper.resolveWebViewAlpha(originalWebViewAlpha ?: 1f)
+        webView.alpha = alpha
+        if (!ToBackCompositorHelper.shouldUseHardwareLayerOnPreviewContainer(true)) {
+            mapViewParent?.setLayerType(View.LAYER_TYPE_NONE, null)
+        }
+        bridge.webView.bringToFront()
     }
 
     fun dispatchTouchEvent(event: MotionEvent) {

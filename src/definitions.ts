@@ -9,9 +9,15 @@ export interface LatLngBoundsInterface {
   northeast: LatLng;
 }
 
+/**
+ * Geographic bounding box with helpers for contains/extend backed by the native plugin.
+ */
 export class LatLngBounds {
+  /** South-west corner of the bounds. */
   southwest: LatLng;
+  /** Center of the bounds. */
   center: LatLng;
+  /** North-east corner of the bounds. */
   northeast: LatLng;
 
   constructor(bounds: LatLngBoundsInterface) {
@@ -20,6 +26,9 @@ export class LatLngBounds {
     this.northeast = bounds.northeast;
   }
 
+  /**
+   * Returns whether `point` lies inside this bounds.
+   */
   async contains(point: LatLng): Promise<boolean> {
     const result = await CapacitorNativeMap.mapBoundsContains({
       bounds: this,
@@ -28,6 +37,9 @@ export class LatLngBounds {
     return result['contains'];
   }
 
+  /**
+   * Expands this bounds to include `point` and returns the same instance.
+   */
   async extend(point: LatLng): Promise<LatLngBounds> {
     const result = await CapacitorNativeMap.mapBoundsExtend({
       bounds: this,
@@ -55,11 +67,13 @@ export interface LatLng {
   lng: number;
 }
 
+/** Width and height in pixels. */
 export interface Size {
   width: number;
   height: number;
 }
 
+/** Point in pixel coordinates. */
 export interface Point {
   x: number;
   y: number;
@@ -467,10 +481,13 @@ export interface Marker {
  */
 export type MapListenerCallback<T> = (data: T) => void;
 
+/** Payload for the `onMapReady` event. */
 export interface MapReadyCallbackData {
+  /** Map instance id passed to {@link NativeMap.create}. */
   mapId: string;
 }
 
+/** Base marker fields included in marker-related events. */
 export interface MarkerCallbackData {
   markerId: string;
   latitude: number;
@@ -479,11 +496,13 @@ export interface MarkerCallbackData {
   snippet: string;
 }
 
+/** Payload for polyline click events. */
 export interface PolylineCallbackData {
   polylineId: string;
   tag?: string;
 }
 
+/** Camera stopped moving; includes visible bounds and camera attitude. */
 export interface CameraIdleCallbackData {
   mapId: string;
   bounds: LatLngBoundsInterface;
@@ -494,11 +513,14 @@ export interface CameraIdleCallbackData {
   zoom: number;
 }
 
+/** Camera started moving. */
 export interface CameraMoveStartedCallbackData {
   mapId: string;
+  /** True when the user gesture started the move. */
   isGesture: boolean;
 }
 
+/** Cluster marker tapped. */
 export interface ClusterClickCallbackData {
   mapId: string;
   latitude: number;
@@ -507,28 +529,33 @@ export interface ClusterClickCallbackData {
   items: MarkerCallbackData[];
 }
 
+/** Map surface tapped (not on a marker). */
 export interface MapClickCallbackData {
   mapId: string;
   latitude: number;
   longitude: number;
 }
 
+/** Marker tapped. */
 export interface MarkerClickCallbackData extends MarkerCallbackData {
   mapId: string;
 }
 
+/** Polygon tapped. */
 export interface PolygonClickCallbackData {
   mapId: string;
   polygonId: string;
   tag?: string;
 }
 
+/** Circle tapped. */
 export interface CircleClickCallbackData {
   mapId: string;
   circleId: string;
   tag?: string;
 }
 
+/** My-location control tapped (Android). */
 export interface MyLocationButtonClickCallbackData {
   mapId: string;
 }
