@@ -84,9 +84,8 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
     // Permissions.swift. The manager is created lazily on first use so a plugin
     // that never touches location never instantiates one.
     var locationManager: CLLocationManager?
-    /// Callback id of the in-flight `requestPermissions` call, held while the
-    /// system prompt is up so the delegate can resolve it once the user answers.
-    var permissionCallID: String?
+    /// In-flight `requestPermissions` call, held while the system prompt is up.
+    var pendingPermissionCall: CAPPluginCall?
 
     // MARK: - App lifecycle
 

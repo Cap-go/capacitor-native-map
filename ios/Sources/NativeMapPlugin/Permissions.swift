@@ -44,23 +44,20 @@ extension NativeMapPlugin: CLLocationManagerDelegate {
     @objc override public func requestPermissions(_ call: CAPPluginCall) {
         let manager = ensureLocationManager()
         if manager.authorizationStatus == .notDetermined {
-            // The prompt is answered asynchronously; hold the call and resolve it
-            // from the delegate once the user responds.
-            bridge?.saveCall(call)
-            permissionCallID = call.callbackId
+            pendingPermissionCall = call
+            call.keepAlive = true
             manager.requestWhenInUseAuthorization()
         } else {
-            // Already decided (granted, denied or restricted) - nothing to prompt.
             checkPermissions(call)
         }
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        guard let callID = permissionCallID, let call = bridge?.getSavedCall(callID) else {
+        guard let call = pendingPermissionCall else {
             return
         }
         checkPermissions(call)
-        bridge?.releaseCall(call)
-        permissionCallID = nil
+        bridge?.releaseCall(withID: call.callbackId)
+        pendingPermissionCall = nil
     }
 }
