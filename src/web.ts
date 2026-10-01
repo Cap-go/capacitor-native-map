@@ -202,29 +202,32 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
   }
 
   async enableCurrentLocation(_args: CurrentLocArgs): Promise<void> {
-    if (_args.enabled) {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          (position: GeolocationPosition) => {
-            const pos = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-
-            this.maps[_args.id].map.setCenter(pos);
-
-            this.notifyListeners('onMyLocationButtonClick', {});
-
-            this.notifyListeners('onMyLocationClick', {});
-          },
-          () => {
-            throw new Error('Geolocation not supported on web browser.');
-          },
-        );
-      } else {
-        throw new Error('Geolocation not supported on web browser.');
-      }
+    if (!_args.enabled) {
+      return;
     }
+    if (!navigator.geolocation) {
+      throw new Error('Geolocation not supported on web browser.');
+    }
+    await new Promise<void>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (position: GeolocationPosition) => {
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          };
+
+          this.maps[_args.id].map.setCenter(pos);
+
+          this.notifyListeners('onMyLocationButtonClick', {});
+
+          this.notifyListeners('onMyLocationClick', {});
+          resolve();
+        },
+        () => {
+          reject(new Error('Geolocation permission denied or unavailable on web browser.'));
+        },
+      );
+    });
   }
   async setPadding(_args: PaddingArgs): Promise<void> {
     const bounds = this.maps[_args.id].map.getBounds();
@@ -302,17 +305,41 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     }
   }
 
+  private attachMarkerToMap(mapId: string, marker: google.maps.marker.AdvancedMarkerElement): void {
+    const mapState = this.maps[mapId];
+    if (mapState.markerClusterer) {
+      mapState.markerClusterer.addMarker(marker);
+    } else {
+      marker.map = mapState.map;
+    }
+  }
+
+  private detachMarkerFromMap(mapId: string, markerId: string): void {
+    const mapState = this.maps[mapId];
+    const marker = mapState.markers[markerId];
+    if (!marker) {
+      return;
+    }
+    if (mapState.markerClusterer) {
+      mapState.markerClusterer.removeMarker(marker);
+    } else {
+      marker.map = null;
+    }
+    delete mapState.markers[markerId];
+  }
+
   async addMarkers(_args: AddMarkersArgs): Promise<{ ids: string[] }> {
     const markerIds: string[] = [];
     const map = this.maps[_args.id];
 
     for (const markerArgs of _args.markers) {
-      const advancedMarker = this.buildMarkerOpts(markerArgs, map.map);
+      const advancedMarker = this.buildMarkerOpts(markerArgs);
 
       const id = '' + this.currMarkerId;
 
       map.markers[id] = advancedMarker;
       await this.setMarkerListeners(_args.id, id, advancedMarker);
+      this.attachMarkerToMap(_args.id, advancedMarker);
 
       markerIds.push(id);
       this.currMarkerId++;
@@ -328,6 +355,7 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
 
     this.maps[_args.id].markers[id] = advancedMarker;
     await this.setMarkerListeners(_args.id, id, advancedMarker);
+    this.attachMarkerToMap(_args.id, advancedMarker);
 
     this.currMarkerId++;
 
@@ -335,21 +363,13 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
   }
 
   async removeMarkers(_args: RemoveMarkersArgs): Promise<void> {
-    const map = this.maps[_args.id];
-
     for (const id of _args.markerIds) {
-      if (map.markers[id]) {
-        map.markers[id].map = null;
-        delete map.markers[id];
-      }
+      this.detachMarkerFromMap(_args.id, id);
     }
   }
 
   async removeMarker(_args: RemoveMarkerArgs): Promise<void> {
-    if (this.maps[_args.id].markers[_args.markerId]) {
-      this.maps[_args.id].markers[_args.markerId].map = null;
-      delete this.maps[_args.id].markers[_args.markerId];
-    }
+    this.detachMarkerFromMap(_args.id, _args.markerId);
   }
 
   async addPolygons(args: AddPolygonsArgs): Promise<{ ids: string[] }> {
@@ -683,7 +703,7 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     });
   }
 
-  private buildMarkerOpts(marker: Marker, map: google.maps.Map): google.maps.marker.AdvancedMarkerElement {
+  private buildMarkerOpts(marker: Marker, _map: google.maps.Map): google.maps.marker.AdvancedMarkerElement {
     if (!this.AdvancedMarkerElement || !this.PinElement) {
       throw new Error('Marker library not loaded');
     }
@@ -700,7 +720,6 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
       content = img;
     } else {
       const pinOptions: google.maps.marker.PinElementOptions = {
-        scale: marker.opacity ?? 1,
         glyph: marker.title,
         background: marker.tintColor
           ? `rgb(${marker.tintColor.r}, ${marker.tintColor.g}, ${marker.tintColor.b})`
@@ -709,11 +728,13 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
 
       const pin = new this.PinElement(pinOptions);
       content = pin.element;
+      if (marker.opacity != null) {
+        content.style.opacity = String(marker.opacity);
+      }
     }
 
     const advancedMarker = new this.AdvancedMarkerElement({
       position: marker.coordinate,
-      map: map,
       content: content,
       title: marker.title,
       gmpDraggable: marker.draggable,

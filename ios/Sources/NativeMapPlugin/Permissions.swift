@@ -56,6 +56,9 @@ extension NativeMapPlugin: CLLocationManagerDelegate {
         guard let call = pendingPermissionCall else {
             return
         }
+        if manager.authorizationStatus == .notDetermined {
+            return
+        }
         checkPermissions(call)
         bridge?.releaseCall(withID: call.callbackId)
         pendingPermissionCall = nil

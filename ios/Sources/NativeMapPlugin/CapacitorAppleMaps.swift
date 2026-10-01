@@ -203,6 +203,7 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
 
     /// Retains the in-flight `MKMapSnapshotter` for the duration of `takeSnapshot`.
     var pendingSnapshotter: MKMapSnapshotter?
+    var snapshotRequestId: UInt = 0
 
     /// The user-tracking button (recenter/follow control) when shown, so it can be
     /// removed again. See setUserTrackingButton in MapControls.swift.

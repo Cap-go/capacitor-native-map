@@ -989,14 +989,20 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
         try {
             val boundsObject = call.getObject("bounds")
             val pointObject = call.getObject("point")
+            val bounds = createLatLngBounds(boundsObject)
+            val point = createLatLng(pointObject)
 
             CoroutineScope(Dispatchers.Main).launch {
-                val bounds = createLatLngBounds(boundsObject)
-                val point = createLatLng(pointObject)
-                val contains = bounds.contains(point)
-                val data = JSObject()
-                data.put("contains", contains)
-                call.resolve(data)
+                try {
+                    val contains = bounds.contains(point)
+                    val data = JSObject()
+                    data.put("contains", contains)
+                    call.resolve(data)
+                } catch (e: NativeMapsError) {
+                    handleError(call, e)
+                } catch (e: Exception) {
+                    handleError(call, e)
+                }
             }
         } catch (e: NativeMapsError) {
             handleError(call, e)
@@ -1018,13 +1024,19 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
                 call.getObject("bounds") ?: throw InvalidArgumentsError("bounds is missing")
 
             val padding = call.getInt("padding", 0)!!
+            val bounds = createLatLngBounds(boundsObject)
 
             CoroutineScope(Dispatchers.Main).launch {
-                val bounds = createLatLngBounds(boundsObject)
-                val density = bridge.context.resources.displayMetrics.density
-                val scaledPadding = (padding * density).toInt()
-                map.fitBounds(bounds, scaledPadding)
-                call.resolve()
+                try {
+                    val density = bridge.context.resources.displayMetrics.density
+                    val scaledPadding = (padding * density).toInt()
+                    map.fitBounds(bounds, scaledPadding)
+                    call.resolve()
+                } catch (e: NativeMapsError) {
+                    handleError(call, e)
+                } catch (e: Exception) {
+                    handleError(call, e)
+                }
             }
         } catch (e: NativeMapsError) {
             handleError(call, e)
@@ -1038,14 +1050,20 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
         try {
             val boundsObject = call.getObject("bounds")
             val pointObject = call.getObject("point")
+            val bounds = createLatLngBounds(boundsObject)
+            val point = createLatLng(pointObject)
 
             CoroutineScope(Dispatchers.Main).launch {
-                val bounds = createLatLngBounds(boundsObject)
-                val point = createLatLng(pointObject)
-                val newBounds = bounds.including(point)
-                val data = JSObject()
-                data.put("bounds", getLatLngBoundsJSObject(newBounds))
-                call.resolve(data)
+                try {
+                    val newBounds = bounds.including(point)
+                    val data = JSObject()
+                    data.put("bounds", getLatLngBoundsJSObject(newBounds))
+                    call.resolve(data)
+                } catch (e: NativeMapsError) {
+                    handleError(call, e)
+                } catch (e: Exception) {
+                    handleError(call, e)
+                }
             }
         } catch (e: NativeMapsError) {
             handleError(call, e)

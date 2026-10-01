@@ -26,6 +26,14 @@ extension NativeMapPlugin {
     /// Whether an in-flight region change originates from a user gesture rather
     /// than a programmatic move. MapKit hangs its pan/pinch/rotate recognizers on
     /// the map's first subview; if any is mid-recognition the move is a gesture.
+    static func regionsAreEqual(_ lhs: MKCoordinateRegion, _ rhs: MKCoordinateRegion) -> Bool {
+        let epsilon = 1e-6
+        return abs(lhs.center.latitude - rhs.center.latitude) < epsilon
+            && abs(lhs.center.longitude - rhs.center.longitude) < epsilon
+            && abs(lhs.span.latitudeDelta - rhs.span.latitudeDelta) < epsilon
+            && abs(lhs.span.longitudeDelta - rhs.span.longitudeDelta) < epsilon
+    }
+
     static func regionChangeIsGesture(_ mapView: MKMapView) -> Bool {
         guard let gestureHost = mapView.subviews.first,
               let recognizers = gestureHost.gestureRecognizers else { return false }
@@ -48,13 +56,21 @@ extension NativeMapPlugin {
             map.isAdjustingRegion = false
         } else if let minZoom = map.config.minZoom, map.currentZoom() < minZoom - 0.01 {
             // The user zoomed out past the floor; bounce back to it.
+            let before = mapView.region
             map.isAdjustingRegion = true
             map.setCameraInternal(coordinate: mapView.centerCoordinate, zoom: minZoom, animate: true)
+            if Self.regionsAreEqual(before, mapView.region) {
+                map.isAdjustingRegion = false
+            }
             return
         } else if let maxZoom = map.config.maxZoom, map.currentZoom() > maxZoom + 0.01 {
             // The user zoomed in past the ceiling; bounce back to it.
+            let before = mapView.region
             map.isAdjustingRegion = true
             map.setCameraInternal(coordinate: mapView.centerCoordinate, zoom: maxZoom, animate: true)
+            if Self.regionsAreEqual(before, mapView.region) {
+                map.isAdjustingRegion = false
+            }
             return
         }
 

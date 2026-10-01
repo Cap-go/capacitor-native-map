@@ -27,12 +27,15 @@ extension Map {
             options.region = self.mapView.region
             options.mapType = self.mapView.mapType
             options.size = self.mapView.bounds.size
-            options.showsBuildings = true
+            options.showsBuildings = self.mapView.showsBuildings
 
+            self.snapshotRequestId += 1
+            let requestId = self.snapshotRequestId
             let snapshotter = MKMapSnapshotter(options: options)
             self.pendingSnapshotter = snapshotter
             // Composite on the main thread - it reads live annotation views.
             snapshotter.start(with: .main) { snapshot, error in
+                guard requestId == self.snapshotRequestId else { return }
                 self.pendingSnapshotter = nil
                 if let error = error {
                     completion(.failure(error))

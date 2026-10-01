@@ -211,6 +211,12 @@ class SearchService: NSObject, MKLocalSearchCompleterDelegate {
             return
         }
 
+        DispatchQueue.main.async {
+            self.resolveOnMain(call, id: id)
+        }
+    }
+
+    private func resolveOnMain(_ call: CAPPluginCall, id: String) {
         // A `places` result already carries its coordinate.
         if let item = items[id] {
             let coordinate = item.placemark.coordinate
@@ -227,9 +233,9 @@ class SearchService: NSObject, MKLocalSearchCompleterDelegate {
             call.resolve([:])
             return
         }
-        DispatchQueue.main.async {
-            let search = MKLocalSearch(request: MKLocalSearch.Request(completion: completion))
-            search.start { response, _ in
+        let search = MKLocalSearch(request: MKLocalSearch.Request(completion: completion))
+        search.start { response, _ in
+            DispatchQueue.main.async {
                 guard let item = response?.mapItems.first else {
                     call.resolve([:])
                     return

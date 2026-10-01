@@ -74,6 +74,7 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
     ]
 
     var maps = [String: Map]()
+    private let mapsLock = NSLock()
     private let searchService = SearchService()
     private let geocodeService = GeocodeService()
 
@@ -102,7 +103,10 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
     /// hierarchy, orphaning the native map's touch handling (it still renders but
     /// gestures stop working). Re-mount each map into its current container.
     @objc private func handleDidBecomeActive() {
-        for (_, map) in maps {
+        mapsLock.lock()
+        let activeMaps = Array(maps.values)
+        mapsLock.unlock()
+        for map in activeMaps {
             map.remountIntoContainer()
         }
     }
@@ -122,17 +126,24 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
 
         do {
             let config = try NativeMapConfig(fromJSObject: configObj)
-
-            if maps[id] != nil {
-                if !forceCreate {
-                    call.resolve()
-                    return
-                }
-                maps.removeValue(forKey: id)?.destroy()
-            }
+            var alreadyExists = false
 
             runOnMainSync {
+                self.mapsLock.lock()
+                if self.maps[id] != nil {
+                    if !forceCreate {
+                        alreadyExists = true
+                        self.mapsLock.unlock()
+                        return
+                    }
+                    self.maps.removeValue(forKey: id)?.destroy()
+                }
                 self.maps[id] = Map(id: id, config: config, delegate: self)
+                self.mapsLock.unlock()
+            }
+            if alreadyExists {
+                call.resolve()
+                return
             }
             call.resolve()
         } catch {
@@ -141,12 +152,21 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
     }
 
     @objc func destroy(_ call: CAPPluginCall) {
-        guard let id = call.getString("id"), let map = maps.removeValue(forKey: id) else {
+        guard let id = call.getString("id") else {
             call.reject("map not found", PluginError.mapNotFound)
             return
         }
-        map.destroy()
-        call.resolve()
+        runOnMainSync {
+            self.mapsLock.lock()
+            guard let map = self.maps.removeValue(forKey: id) else {
+                self.mapsLock.unlock()
+                call.reject("map not found", PluginError.mapNotFound)
+                return
+            }
+            self.mapsLock.unlock()
+            map.destroy()
+            call.resolve()
+        }
     }
 
     // MARK: - Camera
@@ -294,9 +314,8 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
     // MARK: - Helpers
 
     func findMap(for mapView: MKMapView) -> Map? {
-        for (_, map) in maps where map.mapView === mapView {
-            return map
-        }
-        return nil
+        mapsLock.lock()
+        defer { mapsLock.unlock() }
+        return maps.values.first { $0.mapView === mapView }
     }
 }

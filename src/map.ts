@@ -175,8 +175,9 @@ export class NativeMap {
       newMap.initScrolling();
     }
 
+    const createOptions: CreateMapArgs = { ...options };
     if (Capacitor.isNativePlatform()) {
-      (options.element as any) = {};
+      createOptions.element = {} as HTMLElement;
 
       const getMapBounds = () => {
         const mapRect = newMap.element?.getBoundingClientRect() ?? ({} as DOMRect);
@@ -258,7 +259,7 @@ export class NativeMap {
     await new Promise((resolve, reject) => {
       setTimeout(async () => {
         try {
-          await CapacitorNativeMap.create(options);
+          await CapacitorNativeMap.create(createOptions);
           resolve(undefined);
         } catch (err) {
           reject(err);

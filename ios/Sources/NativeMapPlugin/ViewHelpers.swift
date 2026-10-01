@@ -33,23 +33,21 @@ extension WKWebView {
 // MARK: - View tree helpers
 
 extension UIView {
-    private static var allSubviews: [UIView] = []
-
-    private func viewArray(root: UIView) -> [UIView] {
-        var index = root.tag
+    private func collectSubviews(root: UIView, into result: inout [UIView], nextTag: inout Int) {
         for view in root.subviews {
             if view.tag == Map.mapTag { continue }
-            view.tag = index
-            UIView.allSubviews.append(view)
-            _ = viewArray(root: view)
-            index += 1
+            view.tag = nextTag
+            result.append(view)
+            nextTag += 1
+            collectSubviews(root: view, into: &result, nextTag: &nextTag)
         }
-        return UIView.allSubviews
     }
 
     func getAllSubViews() -> [UIView] {
-        UIView.allSubviews = []
-        return viewArray(root: self).reversed()
+        var collected: [UIView] = []
+        var nextTag = tag
+        collectSubviews(root: self, into: &collected, nextTag: &nextTag)
+        return collected.reversed()
     }
 
     func removeAllSubview() {

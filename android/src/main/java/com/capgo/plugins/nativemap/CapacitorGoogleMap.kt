@@ -57,7 +57,6 @@ class CapacitorNativeMapView(
 
         mapView = MapView(bridge.context, config.googleMapOptions)
         initMap()
-        setListeners()
     }
 
     private fun initMap() {
@@ -563,7 +562,7 @@ class CapacitorNativeMapView(
                     val circle = circles[it]
                     if (circle != null) {
                         circle.googleMapsCircle?.remove()
-                        markers.remove(it)
+                        circles.remove(it)
                     }
                 }
 
@@ -937,6 +936,7 @@ class CapacitorNativeMapView(
 
     override fun onMapReady(map: GoogleMap) {
         googleMap = map
+        setListeners()
 
         val data = JSObject()
         data.put("mapId", this@CapacitorNativeMapView.id)
