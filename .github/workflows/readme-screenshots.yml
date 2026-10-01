@@ -88,7 +88,7 @@ jobs:
           fi
           xcrun simctl install booted "$APP_PATH"
           xcrun simctl launch booted app.capgo.nativemap
-          sleep 25
+          sleep 45
           xcrun simctl io booted screenshot "$GITHUB_WORKSPACE/readme-screenshot-ios.png"
       - name: Upload iOS screenshot
         uses: actions/upload-artifact@v4
@@ -149,13 +149,13 @@ jobs:
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         with:
-          api-level: 30
+          api-level: 29
           arch: x86_64
           target: google_apis
           profile: pixel_4
           disable-animations: false
           emulator-boot-timeout-minutes: 45
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: bash .github/scripts/capture-android-readme-screenshot.sh
       - name: Upload Android screenshot and key status
         uses: actions/upload-artifact@v4
