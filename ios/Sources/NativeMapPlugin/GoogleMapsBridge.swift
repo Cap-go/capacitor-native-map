@@ -105,10 +105,13 @@ extension NativeMapPlugin {
         let west = min(sw["lng"] as? Double ?? lng, lng)
         let north = max(ne["lat"] as? Double ?? lat, lat)
         let east = max(ne["lng"] as? Double ?? lng, lng)
+        let centerLat = (south + north) / 2
+        let centerLng = (west + east) / 2
         call.resolve([
             "bounds": [
                 "southwest": ["lat": south, "lng": west],
-                "northeast": ["lat": north, "lng": east]
+                "northeast": ["lat": north, "lng": east],
+                "center": ["lat": centerLat, "lng": centerLng]
             ]
         ])
     }

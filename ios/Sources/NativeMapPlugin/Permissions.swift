@@ -53,10 +53,8 @@ extension NativeMapPlugin: CLLocationManagerDelegate {
     }
 
     public func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        guard let call = pendingPermissionCall else {
-            return
-        }
-        if manager.authorizationStatus == .notDetermined {
+        guard let call = pendingPermissionCall,
+              manager.authorizationStatus != .notDetermined else {
             return
         }
         checkPermissions(call)

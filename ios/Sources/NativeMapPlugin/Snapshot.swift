@@ -36,7 +36,9 @@ extension Map {
             // Composite on the main thread - it reads live annotation views.
             snapshotter.start(with: .main) { snapshot, error in
                 guard requestId == self.snapshotRequestId else { return }
-                self.pendingSnapshotter = nil
+                if self.pendingSnapshotter === snapshotter {
+                    self.pendingSnapshotter = nil
+                }
                 if let error = error {
                     completion(.failure(error))
                     return

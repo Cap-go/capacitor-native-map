@@ -116,8 +116,15 @@ export class NativeMap {
   private id: string;
   private element: HTMLElement | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private orientationChangeTimeoutId?: ReturnType<typeof setTimeout>;
   private orientationChangeHandler = (): void => {
-    setTimeout(() => this.updateMapBounds(), 500);
+    if (this.orientationChangeTimeoutId != null) {
+      clearTimeout(this.orientationChangeTimeoutId);
+    }
+    this.orientationChangeTimeoutId = setTimeout(() => {
+      this.orientationChangeTimeoutId = undefined;
+      this.updateMapBounds();
+    }, 500);
   };
 
   private onBoundsChangedListener?: PluginListenerHandle;
@@ -175,7 +182,7 @@ export class NativeMap {
       newMap.initScrolling();
     }
 
-    const createOptions: CreateMapArgs = { ...options };
+    const createOptions: CreateMapArgs = { ...options, config: { ...options.config } };
     if (Capacitor.isNativePlatform()) {
       createOptions.element = {} as HTMLElement;
 
@@ -262,6 +269,7 @@ export class NativeMap {
           await CapacitorNativeMap.create(createOptions);
           resolve(undefined);
         } catch (err) {
+          onMapReadyListener?.remove();
           reject(err);
         }
       }, 200);
@@ -640,6 +648,10 @@ export class NativeMap {
   }
 
   disableScrolling(): void {
+    if (this.orientationChangeTimeoutId != null) {
+      clearTimeout(this.orientationChangeTimeoutId);
+      this.orientationChangeTimeoutId = undefined;
+    }
     window.removeEventListener('ionScroll', this.handleScrollEvent);
     window.removeEventListener('scroll', this.handleScrollEvent);
     window.removeEventListener('resize', this.handleScrollEvent);

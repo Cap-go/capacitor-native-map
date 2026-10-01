@@ -987,8 +987,10 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
     @PluginMethod
     fun mapBoundsContains(call: PluginCall) {
         try {
-            val boundsObject = call.getObject("bounds")
-            val pointObject = call.getObject("point")
+            val boundsObject =
+                call.getObject("bounds") ?: throw InvalidArgumentsError("bounds is missing")
+            val pointObject =
+                call.getObject("point") ?: throw InvalidArgumentsError("point is missing")
             val bounds = createLatLngBounds(boundsObject)
             val point = createLatLng(pointObject)
 
@@ -1048,8 +1050,10 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
     @PluginMethod
     fun mapBoundsExtend(call: PluginCall) {
         try {
-            val boundsObject = call.getObject("bounds")
-            val pointObject = call.getObject("point")
+            val boundsObject =
+                call.getObject("bounds") ?: throw InvalidArgumentsError("bounds is missing")
+            val pointObject =
+                call.getObject("point") ?: throw InvalidArgumentsError("point is missing")
             val bounds = createLatLngBounds(boundsObject)
             val point = createLatLng(pointObject)
 

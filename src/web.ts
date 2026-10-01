@@ -216,11 +216,20 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
             lng: position.coords.longitude,
           };
 
-          this.maps[_args.id].map.setCenter(pos);
+          const map = this.maps[_args.id]?.map;
+          if (!map) {
+            reject(new Error('Map no longer exists.'));
+            return;
+          }
+          map.setCenter(pos);
 
-          this.notifyListeners('onMyLocationButtonClick', {});
+          this.notifyListeners('onMyLocationButtonClick', { mapId: _args.id });
 
-          this.notifyListeners('onMyLocationClick', {});
+          this.notifyListeners('onMyLocationClick', {
+            mapId: _args.id,
+            latitude: pos.lat,
+            longitude: pos.lng,
+          });
           resolve();
         },
         () => {

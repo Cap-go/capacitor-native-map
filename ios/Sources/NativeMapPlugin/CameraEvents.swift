@@ -23,9 +23,8 @@ extension NativeMapPlugin {
         ])
     }
 
-    /// Whether an in-flight region change originates from a user gesture rather
-    /// than a programmatic move. MapKit hangs its pan/pinch/rotate recognizers on
-    /// the map's first subview; if any is mid-recognition the move is a gesture.
+    /// Compares two regions for equality within a small epsilon (used to detect
+    /// no-op zoom clamps that would otherwise leave `isAdjustingRegion` set).
     static func regionsAreEqual(_ lhs: MKCoordinateRegion, _ rhs: MKCoordinateRegion) -> Bool {
         let epsilon = 1e-6
         return abs(lhs.center.latitude - rhs.center.latitude) < epsilon
@@ -34,6 +33,9 @@ extension NativeMapPlugin {
             && abs(lhs.span.longitudeDelta - rhs.span.longitudeDelta) < epsilon
     }
 
+    /// Whether an in-flight region change originates from a user gesture rather
+    /// than a programmatic move. MapKit hangs its pan/pinch/rotate recognizers on
+    /// the map's first subview; if any is mid-recognition the move is a gesture.
     static func regionChangeIsGesture(_ mapView: MKMapView) -> Bool {
         guard let gestureHost = mapView.subviews.first,
               let recognizers = gestureHost.gestureRecognizers else { return false }
