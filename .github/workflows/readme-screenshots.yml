@@ -2,13 +2,6 @@ name: Capture README screenshots
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - .github/workflows/readme-screenshots.yml
-      - assets/readme-screenshot-ios.webp
-      - assets/readme-screenshot-android.webp
 
 concurrency:
   group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
@@ -126,6 +119,8 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
             echo "google_maps_api_key_present=false" > maps-key-status.txt
           fi
+      - name: Report Maps API key availability
+        run: cat maps-key-status.txt
       - name: Build plugin and example app
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
