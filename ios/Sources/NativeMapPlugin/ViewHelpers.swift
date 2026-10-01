@@ -51,7 +51,14 @@ private func shouldPassTouchThroughToMap(_ hitView: UIView?) -> Bool {
         return false
     }
     let name = String(describing: type(of: hitView))
-    if name.contains("WK") || hitView is UIScrollView {
+    if name.contains("WKContentView") {
+        return false
+    }
+    if let childScrollClass = NSClassFromString("WKChildScrollView"),
+       hitView.isKind(of: childScrollClass) {
+        return true
+    }
+    if hitView is UIScrollView {
         return true
     }
     return hitView.backgroundColor == nil || hitView.backgroundColor == .clear

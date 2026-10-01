@@ -20,11 +20,6 @@ export function shouldRouteTouchToMap(x: number, y: number, mapId: string, toBac
     return false;
   }
 
-  const overlayRoot = document.querySelector('[data-native-map-overlay-root]');
-  if (overlayRoot && !overlayRoot.contains(elem)) {
-    return true;
-  }
-
   let current: HTMLElement | null = elem;
   while (current && current !== document.documentElement) {
     const style = window.getComputedStyle(current);

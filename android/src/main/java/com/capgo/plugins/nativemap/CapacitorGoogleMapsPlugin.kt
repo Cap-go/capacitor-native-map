@@ -217,7 +217,7 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             val id = call.getString("id")
             id ?: throw InvalidMapIdError()
             val map = maps[id] ?: throw MapNotFoundError()
-            map.setVisible(true)
+            map.applyMapVisibility(true)
             call.resolve()
         } catch (e: NativeMapsError) {
             handleError(call, e)
@@ -232,7 +232,7 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             val id = call.getString("id")
             id ?: throw InvalidMapIdError()
             val map = maps[id] ?: throw MapNotFoundError()
-            map.setVisible(false)
+            map.applyMapVisibility(false)
             call.resolve()
         } catch (e: NativeMapsError) {
             handleError(call, e)

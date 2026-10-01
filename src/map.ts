@@ -121,9 +121,12 @@ class MapCustomElement extends HTMLElement {
 customElements.define('capacitor-native-map', MapCustomElement);
 
 export class NativeMap {
+  private static toBackMapCount = 0;
+
   private id: string;
   private element: HTMLElement | null = null;
   private toBack = false;
+  private toBackLayout?: { x: number; y: number; width: number; height: number };
   private windowResizeHandler?: () => void;
   private resizeObserver: ResizeObserver | null = null;
   private orientationChangeTimeoutId?: ReturnType<typeof setTimeout>;
@@ -173,6 +176,10 @@ export class NativeMap {
     const toBack = options.toBack === true;
     newMap.toBack = toBack;
 
+    if (!toBack && !options.element) {
+      throw new Error('element is required when toBack is false');
+    }
+
     const hostElement = options.element ?? document.body;
     if (!hostElement) {
       throw new Error('container element is required');
@@ -190,9 +197,6 @@ export class NativeMap {
     newMap.element = hostElement;
     if (!toBack) {
       newMap.element.dataset.internalId = options.id;
-    } else {
-      document.documentElement.classList.add('native-map-to-back');
-      document.body.classList.add('native-map-to-back');
     }
 
     let elementBounds: DOMRect;
@@ -203,6 +207,17 @@ export class NativeMap {
         options.config.width ?? window.innerWidth,
         options.config.height ?? window.innerHeight,
       );
+      newMap.toBackLayout = {
+        x: elementBounds.x,
+        y: elementBounds.y,
+        width: elementBounds.width,
+        height: elementBounds.height,
+      };
+      NativeMap.toBackMapCount += 1;
+      if (NativeMap.toBackMapCount === 1) {
+        document.documentElement.classList.add('native-map-to-back');
+        document.body.classList.add('native-map-to-back');
+      }
     } else {
       elementBounds = await NativeMap.getElementBounds(hostElement);
     }
@@ -218,7 +233,7 @@ export class NativeMap {
     if (Capacitor.isNativePlatform()) {
       createOptions.element = {} as HTMLElement;
 
-      const getMapBounds = () => NativeMap.layoutBoundsForElement(newMap.element, toBack);
+      const getMapBounds = () => newMap.mapBoundsForNative();
 
       const onDisplay = () => {
         CapacitorNativeMap.onDisplay({
@@ -292,19 +307,56 @@ export class NativeMap {
     }
 
     // small delay to allow for iOS WKWebView to setup corresponding element sub-scroll views ???
-    await new Promise((resolve, reject) => {
-      setTimeout(async () => {
-        try {
-          await CapacitorNativeMap.create(createOptions);
-          resolve(undefined);
-        } catch (err) {
-          onMapReadyListener?.remove();
-          reject(err);
+    const cleanupFailedCreate = (): void => {
+      onMapReadyListener?.remove();
+      if (Capacitor.isNativePlatform()) {
+        newMap.resizeObserver?.disconnect();
+        if (newMap.windowResizeHandler) {
+          window.removeEventListener('resize', newMap.windowResizeHandler);
+          newMap.windowResizeHandler = undefined;
         }
-      }, 200);
-    });
+      }
+      if (toBack) {
+        NativeMap.releaseToBackDocumentClasses();
+        newMap.toBackLayout = undefined;
+      }
+    };
+
+    try {
+      await new Promise((resolve, reject) => {
+        setTimeout(async () => {
+          try {
+            await CapacitorNativeMap.create(createOptions);
+            resolve(undefined);
+          } catch (err) {
+            reject(err);
+          }
+        }, 200);
+      });
+    } catch (err) {
+      cleanupFailedCreate();
+      throw err;
+    }
 
     return newMap;
+  }
+
+  private mapBoundsForNative(): { x: number; y: number; width: number; height: number } {
+    if (this.toBack && this.toBackLayout) {
+      return this.toBackLayout;
+    }
+    return NativeMap.layoutBoundsForElement(this.element, this.toBack);
+  }
+
+  private static releaseToBackDocumentClasses(): void {
+    if (NativeMap.toBackMapCount <= 0) {
+      return;
+    }
+    NativeMap.toBackMapCount -= 1;
+    if (NativeMap.toBackMapCount === 0) {
+      document.documentElement.classList.remove('native-map-to-back');
+      document.body.classList.remove('native-map-to-back');
+    }
   }
 
   private static async getElementBounds(element: HTMLElement): Promise<DOMRect> {
@@ -358,6 +410,14 @@ export class NativeMap {
       ...layout,
     });
     if (layout.width != null || layout.height != null || layout.x != null || layout.y != null) {
+      if (this.toBack && this.toBackLayout) {
+        this.toBackLayout = {
+          x: layout.x ?? this.toBackLayout.x,
+          y: layout.y ?? this.toBackLayout.y,
+          width: layout.width ?? this.toBackLayout.width,
+          height: layout.height ?? this.toBackLayout.height,
+        };
+      }
       this.updateMapBounds();
     }
   }
@@ -545,8 +605,8 @@ export class NativeMap {
     }
 
     if (this.toBack) {
-      document.documentElement.classList.remove('native-map-to-back');
-      document.body.classList.remove('native-map-to-back');
+      NativeMap.releaseToBackDocumentClasses();
+      this.toBackLayout = undefined;
     }
 
     this.removeAllMapListeners();
@@ -724,7 +784,7 @@ export class NativeMap {
     if (this.element) {
       CapacitorNativeMap.onScroll({
         id: this.id,
-        mapBounds: NativeMap.layoutBoundsForElement(this.element, this.toBack),
+        mapBounds: this.mapBoundsForNative(),
       });
     }
   }

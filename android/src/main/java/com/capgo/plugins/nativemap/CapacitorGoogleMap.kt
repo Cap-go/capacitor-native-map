@@ -53,7 +53,7 @@ class CapacitorNativeMapView(
     private var debounceJob: Job? = null
     private var mapViewParent: FrameLayout? = null
     var toBack: Boolean = false
-    var visible: Boolean = true
+    var isMapVisible: Boolean = true
     private var originalWebViewAlpha: Float? = null
 
     init {
@@ -81,17 +81,23 @@ class CapacitorNativeMapView(
                 parent.minimumHeight = bridge.webView.height
                 parent.minimumWidth = bridge.webView.width
 
-                val layoutParams =
+                val parentLayoutParams =
                         FrameLayout.LayoutParams(
                                 getScaledPixels(bridge, config.width),
                                 getScaledPixels(bridge, config.height),
                         )
-                layoutParams.leftMargin = getScaledPixels(bridge, config.x)
-                layoutParams.topMargin = getScaledPixels(bridge, config.y)
+                parentLayoutParams.leftMargin = getScaledPixels(bridge, config.x)
+                parentLayoutParams.topMargin = getScaledPixels(bridge, config.y)
 
                 parent.tag = id
+                parent.layoutParams = parentLayoutParams
 
-                mapView.layoutParams = layoutParams
+                val mapChildParams =
+                        FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                        )
+                mapView.layoutParams = mapChildParams
                 parent.addView(mapView)
 
                 val webParent = (bridge.webView.parent) as ViewGroup
@@ -105,7 +111,7 @@ class CapacitorNativeMapView(
                 }
 
                 mapViewParent = parent
-                parent.visibility = if (visible) View.VISIBLE else View.GONE
+                parent.visibility = if (isMapVisible) View.VISIBLE else View.GONE
                 if (config.styles != null) {
                     googleMap?.setMapStyle(MapStyleOptions(config.styles!!))
                 }
@@ -168,8 +174,8 @@ class CapacitorNativeMapView(
         }
     }
 
-    fun setVisible(isVisible: Boolean) {
-        visible = isVisible
+    fun applyMapVisibility(isVisible: Boolean) {
+        isMapVisible = isVisible
         CoroutineScope(Dispatchers.Main).launch {
             mapViewParent?.visibility = if (isVisible) View.VISIBLE else View.GONE
         }
@@ -188,8 +194,17 @@ class CapacitorNativeMapView(
         layoutParams.leftMargin = getScaledPixels(bridge, config.x)
         layoutParams.topMargin = getScaledPixels(bridge, config.y)
         parent.layoutParams = layoutParams
-        mapView.layoutParams.width = layoutParams.width
-        mapView.layoutParams.height = layoutParams.height
+        val childParams =
+                (mapView.layoutParams as? FrameLayout.LayoutParams)
+                        ?: FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                        )
+        childParams.width = FrameLayout.LayoutParams.MATCH_PARENT
+        childParams.height = FrameLayout.LayoutParams.MATCH_PARENT
+        childParams.leftMargin = 0
+        childParams.topMargin = 0
+        mapView.layoutParams = childParams
         parent.requestLayout()
     }
 

@@ -83,7 +83,12 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
         mapsLock.lock()
         let candidates = maps.values.filter { $0.toBack && $0.isMapVisible }
         mapsLock.unlock()
-        for map in candidates {
+        let ordered = candidates.sorted { lhs, rhs in
+            let left = webView.subviews.firstIndex(of: lhs.mapView) ?? -1
+            let right = webView.subviews.firstIndex(of: rhs.mapView) ?? -1
+            return left > right
+        }
+        for map in ordered {
             let converted = webView.convert(point, to: map.mapView)
             if map.mapView.point(inside: converted, with: nil) {
                 return map

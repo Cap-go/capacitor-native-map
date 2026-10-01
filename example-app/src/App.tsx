@@ -11,7 +11,7 @@ type DemoMode = 'embedded' | 'overlay';
 const App = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const nativeMapRef = useRef<NativeMap | null>(null);
-  const [mode, setMode] = useState<DemoMode>('overlay');
+  const [mode, setMode] = useState<DemoMode>(Capacitor.isNativePlatform() ? 'overlay' : 'embedded');
   const [status, setStatus] = useState('Initializing map...');
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +32,7 @@ const App = () => {
         await nativeMapRef.current?.destroy().catch(() => undefined);
         nativeMapRef.current = null;
 
-        const overlay = mode === 'overlay';
+        const overlay = mode === 'overlay' && Capacitor.isNativePlatform();
         const map = await NativeMap.create({
           id: overlay ? 'overlay-map' : 'demo-map',
           element: overlay ? document.body : mapRef.current!,
