@@ -331,11 +331,11 @@ export interface MapPadding {
 }
 
 /**
- * A tile overlay is an image placed on top of your map at a specific zoom level. Available on iOS, Android and Web
+ * A tile overlay is an image placed on top of your map at a specific zoom level. Supported on Android and web only.
  */
 export interface TileOverlay {
   /**
-   * A string representing the tile url. Should contain `{x}`, `{y}` and `{z}` so they can be replaced with actual values for x, y and zoom. Available on iOS, Android and Web
+   * A string representing the tile url. Should contain `{x}`, `{y}` and `{z}` so they can be replaced with actual values for x, y and zoom. Android and web only.
    *
    * @type {string}
    */
@@ -486,7 +486,7 @@ export interface PolylineCallbackData {
 
 export interface CameraIdleCallbackData {
   mapId: string;
-  bounds: LatLngBounds;
+  bounds: LatLngBoundsInterface;
   bearing: number;
   latitude: number;
   longitude: number;

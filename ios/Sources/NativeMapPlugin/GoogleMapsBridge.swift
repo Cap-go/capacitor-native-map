@@ -5,10 +5,20 @@ import Capacitor
 extension NativeMapPlugin {
 
     @objc func enableTouch(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let map = maps[id] else {
+            call.reject("map not found", PluginError.mapNotFound)
+            return
+        }
+        map.setGestures(scroll: true, zoom: true, rotate: true, pitch: true)
         call.resolve()
     }
 
     @objc func disableTouch(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let map = maps[id] else {
+            call.reject("map not found", PluginError.mapNotFound)
+            return
+        }
+        map.setGestures(scroll: false, zoom: false, rotate: false, pitch: false)
         call.resolve()
     }
 
@@ -82,7 +92,25 @@ extension NativeMapPlugin {
     }
 
     @objc func mapBoundsExtend(_ call: CAPPluginCall) {
-        call.reject("mapBoundsExtend is not implemented on iOS", PluginError.unavailable)
+        guard let boundsObj = call.getObject("bounds"),
+              let pointObj = call.getObject("point") else {
+            call.reject("bounds and point are required", PluginError.invalidArgument)
+            return
+        }
+        let sw = boundsObj["southwest"] as? JSObject ?? [:]
+        let ne = boundsObj["northeast"] as? JSObject ?? [:]
+        let lat = pointObj["lat"] as? Double ?? 0
+        let lng = pointObj["lng"] as? Double ?? 0
+        let south = min(sw["lat"] as? Double ?? lat, lat)
+        let west = min(sw["lng"] as? Double ?? lng, lng)
+        let north = max(ne["lat"] as? Double ?? lat, lat)
+        let east = max(ne["lng"] as? Double ?? lng, lng)
+        call.resolve([
+            "bounds": [
+                "southwest": ["lat": south, "lng": west],
+                "northeast": ["lat": north, "lng": east]
+            ]
+        ])
     }
 
     @objc func dispatchMapEvent(_ call: CAPPluginCall) {

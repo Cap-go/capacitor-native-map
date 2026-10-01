@@ -37,10 +37,14 @@ class CapacitorNativeMapPolygon(fromJSONObject: JSONObject) {
         }
 
         val strokeOpacity = fromJSONObject.optDouble("strokeOpacity", 1.0)
-        strokeColor = this.processColor(fromJSONObject.getString("strokeColor"), strokeOpacity)
+        if (fromJSONObject.has("strokeColor")) {
+            strokeColor = this.processColor(fromJSONObject.getString("strokeColor"), strokeOpacity)
+        }
 
         val fillOpacity = fromJSONObject.optDouble("fillOpacity", 1.0)
-        fillColor = this.processColor(fromJSONObject.getString("fillColor"), fillOpacity)
+        if (fromJSONObject.has("fillColor")) {
+            fillColor = this.processColor(fromJSONObject.getString("fillColor"), fillOpacity)
+        }
 
         strokeWidth = fromJSONObject.optDouble("strokeWeight", 1.0).toFloat()
         clickable = fromJSONObject.optBoolean("clickable", false)

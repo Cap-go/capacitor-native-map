@@ -59,12 +59,16 @@ extension NativeMapPlugin {
         }
 
         let center = mapView.centerCoordinate
-        notifyListeners("onCameraIdle", data: [
+        let payload: JSObject = [
             "mapId": map.id,
             "latitude": center.latitude,
             "longitude": center.longitude,
             "zoom": map.currentZoom(),
+            "bearing": mapView.camera.heading,
+            "tilt": Double(mapView.camera.pitch),
             "bounds": map.boundsPayload()
-        ])
+        ]
+        notifyListeners("onBoundsChanged", data: payload)
+        notifyListeners("onCameraIdle", data: payload)
     }
 }

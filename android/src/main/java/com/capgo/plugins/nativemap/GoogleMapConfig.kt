@@ -106,9 +106,9 @@ class NativeMapConfig(fromJSONObject: JSONObject) {
 
         val cameraPosition = CameraPosition(center, zoom.toFloat(), 0.0F, 0.0F)
 
-        styles = fromJSONObject.getString("styles")
+        styles = fromJSONObject.optString("styles").takeIf { fromJSONObject.has("styles") }
 
-        mapId = fromJSONObject.getString("androidMapId")
+        mapId = fromJSONObject.optString("androidMapId").takeIf { fromJSONObject.has("androidMapId") }
 
         restriction = fromJSONObject.optJSONObject("restriction")?.let { NativeMapConfigRestriction(it) }
 

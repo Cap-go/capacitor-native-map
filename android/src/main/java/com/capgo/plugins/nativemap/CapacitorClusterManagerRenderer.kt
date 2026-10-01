@@ -29,6 +29,8 @@ class CapacitorClusterManagerRenderer(
             markerOptions.alpha(it.alpha)
             markerOptions.flat(it.isFlat)
             markerOptions.draggable(it.isDraggable)
+            markerOptions.zIndex(it.zIndex)
+            markerOptions.anchor(it.anchorU, it.anchorV)
             if(null != it.icon) {
                 markerOptions.icon(it.icon)
             }

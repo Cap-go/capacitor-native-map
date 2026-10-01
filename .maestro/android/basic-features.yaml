@@ -1,5 +1,4 @@
-appId: app.capgo.nativeaudio
 ---
 - launchApp:
     clearState: true
-- runFlow: ../flows/basic-local-music.yaml
+- runFlow: ../flows/native-map-smoke.yaml

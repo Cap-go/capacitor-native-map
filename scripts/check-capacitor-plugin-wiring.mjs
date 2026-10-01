@@ -238,6 +238,9 @@ if (supportsIos) {
     if (podName && pkgName && podName !== pkgName) {
       errors.push(`Podspec: s.name=${podName} != Package(name)=${pkgName}`);
     }
+    if (pkgName && !libNames.length) {
+      errors.push('SPM: Package.swift must declare at least one .library product');
+    }
     if (pkgName && libNames.length && !libNames.includes(pkgName)) {
       errors.push(`SPM: Package(name)=${pkgName} not present in .library(name) list ${JSON.stringify(libNames)}`);
     }

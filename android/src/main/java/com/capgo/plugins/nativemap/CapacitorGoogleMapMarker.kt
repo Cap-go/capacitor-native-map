@@ -63,7 +63,7 @@ class CapacitorNativeMapViewMarker(fromJSONObject: JSONObject): ClusterItem {
         }
 
         draggable = fromJSONObject.optBoolean("draggable", false)
-        zIndex = fromJSONObject.optLong("zIndex").toFloat()
+        zIndex = fromJSONObject.optDouble("zIndex", 0.0).toFloat()
     }
 
     override fun getPosition(): LatLng {
@@ -82,12 +82,7 @@ class CapacitorNativeMapViewMarker(fromJSONObject: JSONObject): ClusterItem {
         return zIndex
     }
 
-    private fun buildIconAnchorPoint(iconAnchor: CapacitorNativeMapPoint): CapacitorNativeMapPoint? {
-        iconSize ?: return null
-
-        val u: Float = iconAnchor.x / iconSize!!.width
-        val v: Float = iconAnchor.y / iconSize!!.height
-
-        return CapacitorNativeMapPoint(u, v)
+    private fun buildIconAnchorPoint(iconAnchor: CapacitorNativeMapPoint): CapacitorNativeMapPoint {
+        return CapacitorNativeMapPoint(iconAnchor.x, iconAnchor.y)
     }
 }

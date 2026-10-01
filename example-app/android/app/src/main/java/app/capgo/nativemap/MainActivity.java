@@ -1,4 +1,4 @@
-package app.capgo.nativeaudio;
+package app.capgo.nativemap;
 
 import com.getcapacitor.BridgeActivity;
 

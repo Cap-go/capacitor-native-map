@@ -967,9 +967,15 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             map ?: throw MapNotFoundError()
 
             CoroutineScope(Dispatchers.Main).launch {
-                val bounds = map.getLatLngBounds()
-                val data = getLatLngBoundsJSObject(bounds)
-                call.resolve(data)
+                try {
+                    val bounds = map.getLatLngBounds()
+                    val data = getLatLngBoundsJSObject(bounds)
+                    call.resolve(data)
+                } catch (e: NativeMapsError) {
+                    handleError(call, e)
+                } catch (e: Exception) {
+                    handleError(call, e)
+                }
             }
         } catch (e: NativeMapsError) {
             handleError(call, e)
@@ -1015,7 +1021,9 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
 
             CoroutineScope(Dispatchers.Main).launch {
                 val bounds = createLatLngBounds(boundsObject)
-                map.fitBounds(bounds, padding)
+                val density = bridge.context.resources.displayMetrics.density
+                val scaledPadding = (padding * density).toInt()
+                map.fitBounds(bounds, scaledPadding)
                 call.resolve()
             }
         } catch (e: NativeMapsError) {

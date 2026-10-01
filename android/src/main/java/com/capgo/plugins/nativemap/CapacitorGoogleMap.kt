@@ -61,25 +61,18 @@ class CapacitorNativeMapView(
     }
 
     private fun initMap() {
-        runBlocking {
-            val job =
-                    CoroutineScope(Dispatchers.Main).launch {
-                        mapView.onCreate(null)
-                        mapView.onStart()
-                        mapView.getMapAsync(this@CapacitorNativeMapView)
-                        mapView.setWillNotDraw(false)
-                        isReadyChannel.receive()
-
-                        render()
-                    }
-
-            job.join()
+        CoroutineScope(Dispatchers.Main).launch {
+            mapView.onCreate(null)
+            mapView.onStart()
+            mapView.getMapAsync(this@CapacitorNativeMapView)
+            mapView.setWillNotDraw(false)
+            isReadyChannel.receive()
+            render()
         }
     }
 
     private fun render() {
-        runBlocking {
-            CoroutineScope(Dispatchers.Main).launch {
+        CoroutineScope(Dispatchers.Main).launch {
                 val bridge = delegate.bridge
                 val mapViewParent = FrameLayout(bridge.context)
                 mapViewParent.minimumHeight = bridge.webView.height
@@ -138,7 +131,6 @@ class CapacitorNativeMapView(
                         )
                     }
                 }
-            }
         }
     }
 
@@ -231,7 +223,7 @@ class CapacitorNativeMapView(
                     tileOverlayOptions.visible(tileOverlay.visible!!)
                 }
                 if (tileOverlay.opacity != null) {
-                    tileOverlayOptions.transparency(tileOverlay.opacity!!)
+                    tileOverlayOptions.transparency(1f - tileOverlay.opacity!!)
                 }
 
                 val googleMapTileOverlay = googleMap?.addTileOverlay(tileOverlayOptions)
@@ -944,13 +936,13 @@ class CapacitorNativeMapView(
     }
 
     override fun onMapReady(map: GoogleMap) {
-        runBlocking {
-            googleMap = map
+        googleMap = map
 
-            val data = JSObject()
-            data.put("mapId", this@CapacitorNativeMapView.id)
-            delegate.notify("onMapReady", data)
+        val data = JSObject()
+        data.put("mapId", this@CapacitorNativeMapView.id)
+        delegate.notify("onMapReady", data)
 
+        CoroutineScope(Dispatchers.Main).launch {
             isReadyChannel.send(true)
             isReadyChannel.close()
         }

@@ -1,34 +1,18 @@
-# Native Audio Example
+# Native Map Example
 
-This Vite + React application demonstrates how to use `@capgo/capacitor-native-audio` with local bundled assets and remote streaming audio.
+This Vite + React app demonstrates `@capgo/capacitor-native-map`: create a map, add a marker, and move the camera.
 
-## Getting started
+## API keys
 
-1. Install dependencies:
-   ```bash
-   bun install
-   ```
-2. Run the web demo:
-   ```bash
-   bun run dev
-   ```
-3. Sync native projects (optional):
-   ```bash
-   bun run sync
-   ```
-4. Launch a native shell application:
-   ```bash
-   bun run ios
-   # or
-   bun run android
-   ```
+- **Web / Android (Google Maps):** set a valid Google Maps API key when calling `NativeMap.create({ apiKey, ... })`.
+- **Android:** also add your key to `AndroidManifest.xml` as `com.google.android.geo.API_KEY` (see the example manifest).
+- **iOS:** uses Apple MapKit; no Google API key is required.
 
-## Features
+## Run locally
 
-- Preload bundled and remote audio assets
-- Playback controls (play, pause, resume, stop, loop)
-- Volume adjustments with live updates
-- Display of current playback time and duration
-- Remote cache clearing for streaming assets
-
-The example references the local plugin source via `"@capgo/capacitor-native-audio": ".."`, so any local changes to the plugin code are picked up after reinstalling dependencies.
+```bash
+bun install
+bun run build
+bunx cap sync
+bunx cap open android   # or ios
+```

@@ -248,12 +248,22 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
         guard let map = findMap(for: mapView) else { return }
 
         if let cluster = view.annotation as? MKClusterAnnotation {
+            let items: [JSObject] = cluster.memberAnnotations.compactMap { annotation in
+                guard let marker = annotation as? NativeMapMarker else { return nil }
+                return [
+                    "markerId": marker.markerId,
+                    "latitude": marker.coordinate.latitude,
+                    "longitude": marker.coordinate.longitude,
+                    "title": marker.title ?? "",
+                    "snippet": marker.subtitle ?? ""
+                ]
+            }
             notifyListeners("onClusterClick", data: [
                 "mapId": map.id,
                 "latitude": cluster.coordinate.latitude,
                 "longitude": cluster.coordinate.longitude,
-                "count": cluster.memberAnnotations.count,
-                "markerIds": cluster.memberAnnotations.compactMap { ($0 as? NativeMapMarker)?.markerId }
+                "size": cluster.memberAnnotations.count,
+                "items": items
             ])
             map.expandCluster(cluster, in: mapView)
             return

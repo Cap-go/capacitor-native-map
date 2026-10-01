@@ -24,10 +24,8 @@ export interface CreateMapArgs {
    */
   id: string;
   /**
-   * The Google Maps SDK API Key.
-   */
-  /**
-   * Google Maps API key. Required on Android and web. Not used on iOS (MapKit).
+   * Google Maps API key. Required on web. On Android, also set
+   * `com.google.android.geo.API_KEY` in the app manifest. Not used on iOS (MapKit).
    */
   apiKey?: string;
   /**
@@ -229,7 +227,8 @@ CapacitorNativeMap.addListener('isMapInFocus', (data) => {
   const y = data.y;
 
   const elem = document.elementFromPoint(x, y) as HTMLElement | null;
-  const internalId = elem?.dataset?.internalId;
+  const mapElement = elem?.closest('[data-internal-id]') as HTMLElement | null;
+  const internalId = mapElement?.dataset?.internalId;
   const mapInFocus = internalId === data.mapId;
 
   CapacitorNativeMap.dispatchMapEvent({ id: data.mapId, focus: mapInFocus });

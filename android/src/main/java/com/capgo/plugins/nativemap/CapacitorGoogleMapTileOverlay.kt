@@ -22,7 +22,7 @@ class CapacitorNativeMapViewTileOverlay(fromJSONObject: JSONObject) {
             visible = fromJSONObject.optBoolean("visible")
         }
         if (fromJSONObject.has("zIndex")) {
-            zIndex = fromJSONObject.optLong("zIndex").toFloat()
+            zIndex = fromJSONObject.optDouble("zIndex").toFloat()
         }
     }
 }

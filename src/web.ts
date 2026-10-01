@@ -63,7 +63,6 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
   private currPolygonId = 0;
   private currCircleId = 0;
   private currPolylineId = 0;
-  private currMapId = 0;
 
   private onClusterClickHandler: onClusterClickHandler = (
     _: google.maps.MapMouseEvent,
@@ -490,10 +489,9 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     }
     await this.importGoogleLib(_args.apiKey, _args.region, _args.language);
 
-    // Ensure we have a Map ID for Advanced Markers
     const config = { ..._args.config };
     if (!config.mapId) {
-      config.mapId = `capacitor_map_${this.currMapId++}`;
+      throw new Error('config.mapId is required on web (create a Map ID in Google Cloud Console for Advanced Markers)');
     }
 
     this.maps[_args.id] = {

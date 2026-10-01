@@ -221,6 +221,7 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
     /// Remote icon urls with a download in flight, so a re-render (e.g. a
     /// clustering toggle re-adding every annotation) doesn't start a duplicate.
     var inFlightIconURLs: Set<String> = []
+    var pendingIconMarkers: [String: [NativeMapMarker]] = [:]
     /// Remote icon urls that returned a response but no usable image - a permanent
     /// miss we must not retry on every re-render (a transport error is left out so
     /// a later render can retry it).

@@ -7,7 +7,7 @@ enum class NativeMapErrors {
     UNHANDLED_ERROR, INVALID_MAP_ID, MAP_NOT_FOUND, MARKER_NOT_FOUND, INVALID_ARGUMENTS, PERMISSIONS_DENIED_LOCATION, GOOGLE_MAP_NOT_AVAILABLE, BOUNDS_NOT_FOUND, TILE_OVERLAY_NOT_FOUND
 }
 
-class NativeMapErrorObject(val code: Int, val message: String, val extra: HashMap<String,Any> = HashMap()) {
+class NativeMapErrorObject(val code: String, val message: String, val extra: HashMap<String,Any> = HashMap()) {
     private fun asJSONObject(): JSONObject {
         val returnJSONObject = JSONObject()
 
@@ -56,59 +56,59 @@ fun getErrorObject(err: NativeMapsError): NativeMapErrorObject {
 }
 
 fun getErrorObject(err: Exception): NativeMapErrorObject {
-    return NativeMapErrorObject(0, "Unhandled Error: ${err.message}.")
+    return NativeMapErrorObject(NativeMapErrors.UNHANDLED_ERROR.name, "Unhandled Error: ${err.message}.")
 }
 
 open class NativeMapsError(message: String? = ""): Throwable(message) {
-    open fun getErrorCode(): Int {
-        return NativeMapErrors.UNHANDLED_ERROR.ordinal
+    open fun getErrorCode(): String {
+        return NativeMapErrors.UNHANDLED_ERROR.name
     }
 }
 
 class InvalidMapIdError(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.INVALID_MAP_ID.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.INVALID_MAP_ID.name
     }
 }
 
 class MapNotFoundError(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.MAP_NOT_FOUND.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.MAP_NOT_FOUND.name
     }
 }
 
 class MarkerNotFoundError(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.MARKER_NOT_FOUND.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.MARKER_NOT_FOUND.name
     }
 }
 
 class TileOverlayNotFoundError(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.TILE_OVERLAY_NOT_FOUND.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.TILE_OVERLAY_NOT_FOUND.name
     }
 }
 
 class InvalidArgumentsError(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.INVALID_ARGUMENTS.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.INVALID_ARGUMENTS.name
     }
 }
 
 class PermissionDeniedLocation(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.PERMISSIONS_DENIED_LOCATION.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.PERMISSIONS_DENIED_LOCATION.name
     }
 }
 
 class NativeMapNotAvailable(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.GOOGLE_MAP_NOT_AVAILABLE.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.GOOGLE_MAP_NOT_AVAILABLE.name
     }
 }
 
 class BoundsNotFoundError(message: String? = ""): NativeMapsError(message) {
-    override fun getErrorCode(): Int {
-        return NativeMapErrors.BOUNDS_NOT_FOUND.ordinal
+    override fun getErrorCode(): String {
+        return NativeMapErrors.BOUNDS_NOT_FOUND.name
     }
 }

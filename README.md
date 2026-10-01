@@ -502,7 +502,7 @@ An interface containing the options used when creating a map.
 | Prop              | Type                                                        | Description                                                                                                                                                                            | Default            |
 | ----------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
 | **`id`**          | <code>string</code>                                         | A unique identifier for the map instance.                                                                                                                                              |                    |
-| **`apiKey`**      | <code>string</code>                                         | Google Maps API key. Required on Android and web. Not used on iOS (MapKit).                                                                                                            |                    |
+| **`apiKey`**      | <code>string</code>                                         | Google Maps API key. Required on web. On Android, also set `com.google.android.geo.API_KEY` in the app manifest. Not used on iOS (MapKit).                                             |                    |
 | **`config`**      | <code><a href="#nativemapconfig">NativeMapConfig</a></code> | The initial configuration settings for the map.                                                                                                                                        |                    |
 | **`element`**     | <code>HTMLElement</code>                                    | The DOM element that the Google Map View will be mounted on which determines size and positioning.                                                                                     |                    |
 | **`forceCreate`** | <code>boolean</code>                                        | Destroy and re-create the map instance if a map with the supplied id already exists                                                                                                    | <code>false</code> |
@@ -557,14 +557,14 @@ An interface representing a pair of latitude and longitude coordinates.
 
 #### TileOverlay
 
-A tile overlay is an image placed on top of your map at a specific zoom level. Available on iOS, Android and Web
+A tile overlay is an image placed on top of your map at a specific zoom level. Supported on Android and web only.
 
-| Prop          | Type                 | Description                                                                                                                                                               | Default                |
-| ------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **`url`**     | <code>string</code>  | A string representing the tile url. Should contain `{x}`, `{y}` and `{z}` so they can be replaced with actual values for x, y and zoom. Available on iOS, Android and Web |                        |
-| **`opacity`** | <code>number</code>  | The opacity of the tile overlay, between 0 (completely transparent) and 1 inclusive. Available on iOS, Android and Web                                                    | <code>undefined</code> |
-| **`visible`** | <code>boolean</code> | Controls whether this tile overlay should be visible. Available only on Android                                                                                           | <code>undefined</code> |
-| **`zIndex`**  | <code>number</code>  | The zIndex of the tile overlay. Available on iOS and Android                                                                                                              | <code>undefined</code> |
+| Prop          | Type                 | Description                                                                                                                                                   | Default                |
+| ------------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| **`url`**     | <code>string</code>  | A string representing the tile url. Should contain `{x}`, `{y}` and `{z}` so they can be replaced with actual values for x, y and zoom. Android and web only. |                        |
+| **`opacity`** | <code>number</code>  | The opacity of the tile overlay, between 0 (completely transparent) and 1 inclusive. Available on iOS, Android and Web                                        | <code>undefined</code> |
+| **`visible`** | <code>boolean</code> | Controls whether this tile overlay should be visible. Available only on Android                                                                               | <code>undefined</code> |
+| **`zIndex`**  | <code>number</code>  | The zIndex of the tile overlay. Available on iOS and Android                                                                                                  | <code>undefined</code> |
 
 
 #### RemoveTileOverlayArgs

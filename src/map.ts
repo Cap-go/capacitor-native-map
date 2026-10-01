@@ -116,6 +116,9 @@ export class NativeMap {
   private id: string;
   private element: HTMLElement | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private orientationChangeHandler = (): void => {
+    setTimeout(() => this.updateMapBounds(), 500);
+  };
 
   private onBoundsChangedListener?: PluginListenerHandle;
   private onCameraIdleListener?: PluginListenerHandle;
@@ -241,6 +244,16 @@ export class NativeMap {
       newMap.resizeObserver.observe(newMap.element);
     }
 
+    let onMapReadyListener: PluginListenerHandle | undefined;
+    if (callback) {
+      onMapReadyListener = await CapacitorNativeMap.addListener('onMapReady', (data: MapReadyCallbackData) => {
+        if (data.mapId == newMap.id) {
+          callback(data);
+          onMapReadyListener?.remove();
+        }
+      });
+    }
+
     // small delay to allow for iOS WKWebView to setup corresponding element sub-scroll views ???
     await new Promise((resolve, reject) => {
       setTimeout(async () => {
@@ -252,15 +265,6 @@ export class NativeMap {
         }
       }, 200);
     });
-
-    if (callback) {
-      const onMapReadyListener = await CapacitorNativeMap.addListener('onMapReady', (data: MapReadyCallbackData) => {
-        if (data.mapId == newMap.id) {
-          callback(data);
-          onMapReadyListener.remove();
-        }
-      });
-    }
 
     return newMap;
   }
@@ -628,13 +632,9 @@ export class NativeMap {
     window.addEventListener('scroll', this.handleScrollEvent);
     window.addEventListener('resize', this.handleScrollEvent);
     if (screen.orientation) {
-      screen.orientation.addEventListener('change', () => {
-        setTimeout(this.updateMapBounds, 500);
-      });
+      screen.orientation.addEventListener('change', this.orientationChangeHandler);
     } else {
-      window.addEventListener('orientationchange', () => {
-        setTimeout(this.updateMapBounds, 500);
-      });
+      window.addEventListener('orientationchange', this.orientationChangeHandler);
     }
   }
 
@@ -643,13 +643,9 @@ export class NativeMap {
     window.removeEventListener('scroll', this.handleScrollEvent);
     window.removeEventListener('resize', this.handleScrollEvent);
     if (screen.orientation) {
-      screen.orientation.removeEventListener('change', () => {
-        setTimeout(this.updateMapBounds, 1000);
-      });
+      screen.orientation.removeEventListener('change', this.orientationChangeHandler);
     } else {
-      window.removeEventListener('orientationchange', () => {
-        setTimeout(this.updateMapBounds, 1000);
-      });
+      window.removeEventListener('orientationchange', this.orientationChangeHandler);
     }
   }
 

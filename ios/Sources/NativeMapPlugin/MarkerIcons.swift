@@ -51,16 +51,22 @@ extension Map {
     /// misses so a re-render doesn't re-download. Must be called on the main
     /// thread; the completion hops back to it.
     private func downloadRemoteIcon(_ iconUrl: String, for marker: NativeMapMarker, in mapView: MKMapView) {
-        guard !failedIconURLs.contains(iconUrl), !inFlightIconURLs.contains(iconUrl) else { return }
+        guard !failedIconURLs.contains(iconUrl) else { return }
+        if inFlightIconURLs.contains(iconUrl) {
+            pendingIconMarkers[iconUrl, default: []].append(marker)
+            return
+        }
         guard let url = URL(string: iconUrl) else {
             failedIconURLs.insert(iconUrl)
             return
         }
         inFlightIconURLs.insert(iconUrl)
+        pendingIconMarkers[iconUrl] = [marker]
         URLSession.shared.dataTask(with: url) { [weak self, weak mapView] data, _, error in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 self.inFlightIconURLs.remove(iconUrl)
+                let markers = self.pendingIconMarkers.removeValue(forKey: iconUrl) ?? []
 
                 guard let data = data, let image = UIImage(data: data) else {
                     // A response with no usable image (404 body, wrong content,
@@ -71,11 +77,12 @@ extension Map {
                 }
 
                 self.iconCache.setObject(image, forKey: iconUrl as NSString)
-                if let view = mapView?.view(for: marker) {
-                    let sized = self.resize(image, marker.iconSize)
+                for waitingMarker in markers where waitingMarker.iconUrl == iconUrl {
+                    guard let view = mapView?.view(for: waitingMarker) else { continue }
+                    let sized = self.resize(image, waitingMarker.iconSize)
                     view.image = sized
                     if let sized = sized {
-                        view.centerOffset = marker.centerOffset(for: sized.size)
+                        view.centerOffset = waitingMarker.centerOffset(for: sized.size)
                     }
                 }
             }
