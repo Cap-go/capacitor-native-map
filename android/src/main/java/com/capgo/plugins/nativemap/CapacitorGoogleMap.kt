@@ -40,7 +40,7 @@ class CapacitorNativeMapView(
         OnPolylineClickListener,
         OnPolygonClickListener {
     private var mapView: MapView
-    private var googleMap: NativeMap? = null
+    private var googleMap: GoogleMap? = null
     private val markers = HashMap<String, CapacitorNativeMapViewMarker>()
     private val tileOverlays = HashMap<String, CapacitorNativeMapViewTileOverlay>()
     private val polygons = HashMap<String, CapacitorNativeMapPolygon>()
@@ -116,10 +116,10 @@ class CapacitorNativeMapView(
 
                 if (config.mapTypeId != null) {
                     when (config.mapTypeId!!) {
-                        "hybrid" -> googleMap?.mapType = NativeMap.MAP_TYPE_HYBRID
-                        "roadmap" -> googleMap?.mapType = NativeMap.MAP_TYPE_NORMAL
-                        "satellite" -> googleMap?.mapType = NativeMap.MAP_TYPE_SATELLITE
-                        "terrain" -> googleMap?.mapType = NativeMap.MAP_TYPE_TERRAIN
+                        "hybrid" -> googleMap?.mapType = GoogleMap.MAP_TYPE_HYBRID
+                        "roadmap" -> googleMap?.mapType = GoogleMap.MAP_TYPE_NORMAL
+                        "satellite" -> googleMap?.mapType = GoogleMap.MAP_TYPE_SATELLITE
+                        "terrain" -> googleMap?.mapType = GoogleMap.MAP_TYPE_TERRAIN
                     }
                 }
 
@@ -943,7 +943,7 @@ class CapacitorNativeMapView(
         mapView.onDestroy()
     }
 
-    override fun onMapReady(map: NativeMap) {
+    override fun onMapReady(map: GoogleMap) {
         runBlocking {
             googleMap = map
 

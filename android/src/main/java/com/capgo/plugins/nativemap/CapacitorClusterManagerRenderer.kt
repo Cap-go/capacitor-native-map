@@ -8,7 +8,7 @@ import com.google.maps.android.clustering.view.DefaultClusterRenderer
 
 class CapacitorClusterManagerRenderer(
     context: Context,
-    map: NativeMap?,
+    map: GoogleMap??,
     clusterManager: ClusterManager<CapacitorNativeMapViewMarker>?,
     minClusterSize: Int?
 ) : DefaultClusterRenderer<CapacitorNativeMapViewMarker>(context, map, clusterManager) {
