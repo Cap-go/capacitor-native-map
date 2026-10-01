@@ -349,7 +349,7 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
   }
 
   async addMarker(_args: AddMarkerArgs): Promise<{ id: string }> {
-    const advancedMarker = this.buildMarkerOpts(_args.marker, this.maps[_args.id].map);
+    const advancedMarker = this.buildMarkerOpts(_args.marker);
 
     const id = '' + this.currMarkerId;
 
@@ -703,7 +703,7 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     });
   }
 
-  private buildMarkerOpts(marker: Marker, _map: google.maps.Map): google.maps.marker.AdvancedMarkerElement {
+  private buildMarkerOpts(marker: Marker): google.maps.marker.AdvancedMarkerElement {
     if (!this.AdvancedMarkerElement || !this.PinElement) {
       throw new Error('Marker library not loaded');
     }
