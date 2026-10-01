@@ -197,10 +197,10 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
 
             val map = maps[id] ?: throw MapNotFoundError()
 
-            val x = call.getInt("x") ?: map.config.x
-            val y = call.getInt("y") ?: map.config.y
-            val width = call.getInt("width") ?: map.config.width
-            val height = call.getInt("height") ?: map.config.height
+            val x = call.getInt("x", map.config.x)!!
+            val y = call.getInt("y", map.config.y)!!
+            val width = call.getInt("width", map.config.width)!!
+            val height = call.getInt("height", map.config.height)!!
 
             map.updateLayout(x, y, width, height)
             call.resolve()
