@@ -86,14 +86,10 @@ jobs:
           set -euo pipefail
           if [ -n "${GOOGLE_MAPS_API_KEY:-}" ]; then
             echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "google_maps_api_key_present=true" > maps-key-status.txt
           else
             echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
-          echo "google_maps_api_key_present=${GOOGLE_MAPS_API_KEY:+true}" > maps-key-status.txt
-          if [ -z "${GOOGLE_MAPS_API_KEY:-}" ]; then
             echo "google_maps_api_key_present=false" > maps-key-status.txt
-          else
-            echo "google_maps_api_key_present=true" > maps-key-status.txt
           fi
       - name: Build plugin and example app
         env:
