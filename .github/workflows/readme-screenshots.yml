@@ -156,13 +156,7 @@ jobs:
           disable-animations: false
           emulator-boot-timeout-minutes: 45
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: |
-            set -eu
-            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-            adb install -r example-app/android/app/build/outputs/apk/debug/app-debug.apk
-            adb shell am start -n app.capgo.nativemap/.MainActivity
-            sleep 35
-            adb exec-out screencap -p > "$GITHUB_WORKSPACE/readme-screenshot-android.png"
+          script: bash .github/scripts/capture-android-readme-screenshot.sh
       - name: Upload Android screenshot and key status
         uses: actions/upload-artifact@v4
         with:
