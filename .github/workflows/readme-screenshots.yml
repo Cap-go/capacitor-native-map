@@ -1,0 +1,162 @@
+name: Capture README screenshots
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+      - name: Build plugin and example app
+        run: |
+          set -euo pipefail
+          bun install
+          bun run build
+          cd example-app
+          bun install
+          bun run build
+          bunx cap sync ios
+      - name: Resolve iOS Simulator device
+        id: sim
+        run: |
+          set -euo pipefail
+          DEVICE_NAME="$(python3 <<'PY'
+          import json, subprocess, sys
+          out = subprocess.check_output(["xcrun", "simctl", "list", "devices", "available", "-j"], text=True)
+          data = json.loads(out)
+          preferred = ("iPhone 16", "iPhone 15", "iPhone 14")
+          for name in preferred:
+              for runtime, devices in data.get("devices", {}).items():
+                  if "iOS" not in runtime:
+                      continue
+                  for device in devices:
+                      if device.get("isAvailable") and device.get("name") == name:
+                          print(name)
+                          sys.exit(0)
+          for runtime, devices in data.get("devices", {}).items():
+              if "iOS" not in runtime:
+                  continue
+              for device in devices:
+                  if device.get("isAvailable") and "iPhone" in device.get("name", ""):
+                      print(device["name"])
+                      sys.exit(0)
+          sys.exit("No available iPhone simulator found")
+          PY
+          )"
+          echo "device_name=$DEVICE_NAME" >> "$GITHUB_OUTPUT"
+      - name: Build for iOS Simulator
+        run: |
+          set -euo pipefail
+          cd example-app/ios/App
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.device_name }}" \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Launch app and capture screenshot
+        run: |
+          set -euo pipefail
+          DEVICE_NAME="${{ steps.sim.outputs.device_name }}"
+          xcrun simctl boot "$DEVICE_NAME" 2>/dev/null || true
+          xcrun simctl bootstatus booted -b
+          APP_PATH="$(find "$RUNNER_TEMP/DerivedData" -name 'App.app' -path '*iphonesimulator*' | head -1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "Could not find App.app in DerivedData"
+            exit 1
+          fi
+          xcrun simctl install booted "$APP_PATH"
+          xcrun simctl launch booted app.capgo.nativemap
+          sleep 45
+          xcrun simctl io booted screenshot "$GITHUB_WORKSPACE/readme-screenshot-ios.png"
+      - name: Upload iOS screenshot
+        uses: actions/upload-artifact@v7
+        with:
+          name: readme-screenshot-ios
+          path: readme-screenshot-ios.png
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 21
+      - name: Record Google Maps API key availability
+        id: maps_key
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GOOGLE_MAPS_API_KEY:-}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "google_maps_api_key_present=true" > maps-key-status.txt
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "google_maps_api_key_present=false" > maps-key-status.txt
+          fi
+      - name: Report Maps API key availability
+        run: cat maps-key-status.txt
+      - name: Build plugin and example app
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          bun install
+          bun run build
+          cd example-app
+          bun install
+          bun run build
+          bunx cap sync android
+      - name: Assemble debug APK
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          cd example-app/android
+          ./gradlew assembleDebug
+      - name: Run emulator, install app, capture screenshot
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        with:
+          api-level: 29
+          arch: x86_64
+          target: google_apis
+          profile: pixel_4
+          disable-animations: false
+          emulator-boot-timeout-minutes: 45
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: bash .github/scripts/capture-android-readme-screenshot.sh
+      - name: Upload Android screenshot and key status
+        uses: actions/upload-artifact@v7
+        with:
+          name: readme-screenshot-android
+          path: |
+            readme-screenshot-android.png
+            maps-key-status.txt
+          if-no-files-found: error

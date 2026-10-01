@@ -1,0 +1,96 @@
+.app {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1rem;
+  font-family: system-ui, sans-serif;
+}
+
+.app-overlay {
+  max-width: none;
+  min-height: 100vh;
+  padding: 0;
+  margin: 0;
+}
+
+.map-container {
+  width: 100%;
+  height: 420px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #ccc;
+  margin-top: 1rem;
+}
+
+.map-overlay-ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.map-overlay-ui [data-map-overlay] {
+  pointer-events: auto;
+}
+
+.overlay-bar {
+  margin: env(safe-area-inset-top) 1rem 0;
+  padding: 1rem 1.25rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.82);
+  color: #f8fafc;
+  backdrop-filter: blur(8px);
+}
+
+.overlay-bar h1 {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+}
+
+.overlay-bar p {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.overlay-actions {
+  position: fixed;
+  left: 50%;
+  bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.75rem;
+}
+
+.overlay-actions button,
+.mode-switch {
+  border: 0;
+  border-radius: 999px;
+  padding: 0.65rem 1.1rem;
+  font-weight: 600;
+  background: #0ea5e9;
+  color: #fff;
+  box-shadow: 0 8px 24px rgba(14, 165, 233, 0.35);
+}
+
+.tagline {
+  color: #444;
+}
+
+.status-message {
+  position: fixed;
+  left: 1rem;
+  right: 1rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  text-align: center;
+  color: #0f172a;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+
+.app-overlay .status-message {
+  color: #e2e8f0;
+}
+
+.error {
+  color: #b00020;
+}
