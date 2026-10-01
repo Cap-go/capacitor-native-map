@@ -1,0 +1,13 @@
+# Keep CodeRabbit within the OSS per-review file cap: focus on plugin source.
+reviews:
+  path_filters:
+    - "!example-app/**"
+    - "!.github/**"
+    - "!.maestro/**"
+    - "!assets/**"
+    - "!legal/**"
+    - "!README.md"
+    - "!CHANGELOG.md"
+    - "!AGENTS.md"
+    - "!NOTICE"
+    - "!THIRD_PARTY_LICENSES"
