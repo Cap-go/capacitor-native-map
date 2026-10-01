@@ -57,20 +57,6 @@ private func shouldPassTouchThroughToMap(_ hitView: UIView?) -> Bool {
     return hitView.backgroundColor == nil || hitView.backgroundColor == .clear
 }
 
-extension NativeMapPlugin {
-    func toBackMap(containing point: CGPoint, in webView: WKWebView) -> Map? {
-        mapsLock.lock()
-        let candidates = maps.values.filter { $0.toBack && $0.isMapVisible }
-        mapsLock.unlock()
-        for map in candidates {
-            let converted = webView.convert(point, to: map.mapView)
-            if map.mapView.point(inside: converted, with: nil) {
-                return map
-            }
-        }
-        return nil
-    }
-}
 
 // MARK: - View tree helpers
 
