@@ -155,7 +155,7 @@ jobs:
           profile: pixel_4
           disable-animations: false
           emulator-boot-timeout-minutes: 45
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -memory 4096
           script: bash .github/scripts/capture-android-readme-screenshot.sh
       - name: Upload Android screenshot and key status
         uses: actions/upload-artifact@v4
