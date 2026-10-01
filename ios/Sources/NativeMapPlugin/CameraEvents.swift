@@ -66,7 +66,7 @@ extension NativeMapPlugin {
             "zoom": map.currentZoom(),
             "bearing": mapView.camera.heading,
             "tilt": Double(mapView.camera.pitch),
-            "bounds": map.boundsPayload()
+            "bounds": map.boundsPayload() as JSObject
         ]
         notifyListeners("onBoundsChanged", data: payload)
         notifyListeners("onCameraIdle", data: payload)
