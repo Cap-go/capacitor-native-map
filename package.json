@@ -15,7 +15,6 @@
     "ios/Tests",
     "Package.swift",
     "CapgoCapacitorNativeMap.podspec",
-    "NOTICE",
     "assets/readme-demo.webp"
   ],
   "author": "Martin Donadieu",
