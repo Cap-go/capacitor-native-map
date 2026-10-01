@@ -26,7 +26,7 @@ class MarkerAnchorTests: XCTestCase {
         let size = CGSize(width: 40, height: 60)
         let marker = NativeMapMarker()
 
-        // Default (nil) anchors the bottom-centre — the classic teardrop tip.
+        // Default (nil) anchors the bottom-centre - the classic teardrop tip.
         XCTAssertEqual(marker.centerOffset(for: size), CGPoint(x: 0, y: -30))
 
         marker.iconAnchor = CGPoint(x: 0.5, y: 0.5) // centred, as a dot wants

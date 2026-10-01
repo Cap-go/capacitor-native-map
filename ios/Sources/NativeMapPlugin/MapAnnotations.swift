@@ -14,7 +14,7 @@ extension Map {
     static let markerReuseId = "appleMapMarker"
     // Markers with an icon and markers without one use different view classes
     // (MKAnnotationView vs MKMarkerAnnotationView) and so must not share a reuse
-    // identifier — MapKit would hand back the wrong class from the reuse pool.
+    // identifier - MapKit would hand back the wrong class from the reuse pool.
     static let markerDefaultReuseId = "appleMapMarkerDefault"
 
     /// Parse a JS camera config (`coordinate` / `zoom` / `animate`) and apply it.
@@ -65,8 +65,8 @@ extension Map {
         }
         view.annotation = marker
         view.clusteringIdentifier = shouldCluster ? Map.clusterReuseId : nil
-        // `.required` opts an annotation out of decluttering — which includes
-        // clustering — so a required marker will never collapse into a bubble no
+        // `.required` opts an annotation out of decluttering - which includes
+        // clustering - so a required marker will never collapse into a bubble no
         // matter its clusteringIdentifier. When clustering is on, drop to
         // `.defaultHigh` so overlapping markers may cluster; when it's off keep
         // `.required` so no pin is ever silently hidden by decluttering.

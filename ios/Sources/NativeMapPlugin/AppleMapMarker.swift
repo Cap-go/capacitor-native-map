@@ -35,8 +35,8 @@ class NativeMapMarker: MKPointAnnotation {
 
     /// The `MKAnnotationView.centerOffset` that lands this marker's anchor point on
     /// its coordinate, for an icon rendered at `imageSize`. A view is centred on
-    /// its coordinate by default, so the offset moves the view until the anchor —
-    /// not the centre — sits on the point. The bottom-centre default `(0.5, 1)`
+    /// its coordinate by default, so the offset moves the view until the anchor -
+    /// not the centre - sits on the point. The bottom-centre default `(0.5, 1)`
     /// gives `(0, -height/2)`, the classic teardrop-tip anchoring.
     func centerOffset(for imageSize: CGSize) -> CGPoint {
         let anchor = iconAnchor ?? CGPoint(x: 0.5, y: 1.0)
@@ -45,7 +45,7 @@ class NativeMapMarker: MKPointAnnotation {
     }
 
     /// Applies whichever icon fields (`iconUrl`, `iconSize`, `iconAnchor`) are
-    /// present in an update payload, returning whether any changed — the caller
+    /// present in an update payload, returning whether any changed - the caller
     /// re-renders the annotation when so. A present `iconAnchor` of `null` resets
     /// to the bottom-centre default. Mirrors the parsing in `Map.makeMarker`.
     func applyIconUpdates(from obj: JSObject) -> Bool {
