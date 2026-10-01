@@ -11,8 +11,8 @@ on:
       - assets/readme-screenshot-android.webp
 
 concurrency:
-  group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
+  cancel-in-progress: false
 
 jobs:
   ios:
@@ -99,7 +99,7 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -137,25 +137,31 @@ jobs:
           bun install
           bun run build
           bunx cap sync android
+      - name: Assemble debug APK
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          cd example-app/android
+          ./gradlew assembleDebug
       - name: Run emulator, install app, capture screenshot
         uses: reactivecircus/android-emulator-runner@v2
         env:
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
         with:
-          api-level: 34
+          api-level: 30
           arch: x86_64
           target: google_apis
-          profile: pixel_6
+          profile: pixel_4
           disable-animations: true
+          emulator-boot-timeout-minutes: 45
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: |
             set -eu
-            cd example-app/android
-            ./gradlew assembleDebug
             adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
-            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb install -r example-app/android/app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n app.capgo.nativemap/.MainActivity
-            sleep 30
+            sleep 35
             adb exec-out screencap -p > "$GITHUB_WORKSPACE/readme-screenshot-android.png"
       - name: Upload Android screenshot and key status
         uses: actions/upload-artifact@v4
