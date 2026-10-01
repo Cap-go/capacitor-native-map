@@ -164,25 +164,27 @@ export class NativeMap {
       throw new Error('container element is required');
     }
 
-    if (options.config.androidLiteMode === undefined) {
-      options.config.androidLiteMode = false;
-    }
+    const createOptions: CreateMapArgs = {
+      ...options,
+      config: {
+        ...options.config,
+        androidLiteMode: options.config.androidLiteMode ?? false,
+      },
+    };
 
     newMap.element = options.element;
     newMap.element.dataset.internalId = options.id;
 
     const elementBounds = await NativeMap.getElementBounds(options.element);
-    options.config.width = elementBounds.width;
-    options.config.height = elementBounds.height;
-    options.config.x = elementBounds.x;
-    options.config.y = elementBounds.y;
-    options.config.devicePixelRatio = window.devicePixelRatio;
+    createOptions.config.width = elementBounds.width;
+    createOptions.config.height = elementBounds.height;
+    createOptions.config.x = elementBounds.x;
+    createOptions.config.y = elementBounds.y;
+    createOptions.config.devicePixelRatio = window.devicePixelRatio;
 
     if (Capacitor.getPlatform() == 'android') {
       newMap.initScrolling();
     }
-
-    const createOptions: CreateMapArgs = { ...options, config: { ...options.config } };
     if (Capacitor.isNativePlatform()) {
       createOptions.element = {} as HTMLElement;
 

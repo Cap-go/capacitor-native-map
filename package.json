@@ -16,8 +16,7 @@
     "Package.swift",
     "CapgoCapacitorNativeMap.podspec",
     "NOTICE",
-    "THIRD_PARTY_LICENSES",
-    "legal/"
+    "assets/readme-demo.webp"
   ],
   "author": "Martin Donadieu",
   "repository": {

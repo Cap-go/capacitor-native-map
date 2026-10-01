@@ -35,7 +35,10 @@ extension Map {
             self.pendingSnapshotter = snapshotter
             // Composite on the main thread - it reads live annotation views.
             snapshotter.start(with: .main) { snapshot, error in
-                guard requestId == self.snapshotRequestId else { return }
+                if requestId != self.snapshotRequestId {
+                    completion(.failure(SnapshotError.failed("snapshot superseded by a newer request")))
+                    return
+                }
                 if self.pendingSnapshotter === snapshotter {
                     self.pendingSnapshotter = nil
                 }

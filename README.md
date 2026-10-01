@@ -1,21 +1,68 @@
 # @capgo/capacitor-native-map
 
-Native maps for Capacitor with one JavaScript API:
+**One TypeScript API for native maps in Capacitor apps** — Google Maps on Android, Apple MapKit on iOS, and Google Maps JS on the web. Ship the same markers, camera, overlays, clustering, search, and events everywhere without maintaining three separate integrations.
 
-- **Android**: Google Maps (Maps SDK)
-- **iOS**: Apple MapKit
-- **Web**: Google Maps JavaScript API (requires an API key)
+<p align="center">
+  <img src="assets/readme-demo.webp" width="360" alt="Native map in a Capacitor app" />
+</p>
 
-Capacitor 8.x. TypeScript 6.x in the example app.
+## Why use it
 
-## Credits
+- **Single API** across iOS, Android, and web (`NativeMap.create`, shared listeners, shared types).
+- **Native performance** where it matters: platform map views under your HTML, not a slow WebView map on mobile.
+- **Feature parity** for common product needs: markers (incl. remote icons), shapes, clustering, camera bounds, padding, snapshots, geocoding/search helpers, and current location.
+- **Capacitor 8** and modern TypeScript tooling in the included example app.
 
-Portions of this plugin are adapted from:
+## Features
 
-- [@capacitor/google-maps](https://github.com/ionic-team/capacitor-google-maps) (MIT) for Android and web
-- [capacitor-plugin-apple-maps](https://github.com/katamalabs/capacitor-plugin-apple-maps) (MIT) for iOS
+| Area | Highlights |
+| --- | --- |
+| **Map lifecycle** | Create, destroy, resize, scroll sync with Ionic/WebView |
+| **Camera** | Center, zoom, bearing, tilt, fit bounds, min/max zoom |
+| **Markers** | Add/update/remove, drag, selection, callouts, clustering |
+| **Overlays** | Polygons, polylines, circles, tile overlays (platform-dependent) |
+| **Events** | Map/marker/shape clicks, camera idle/move, clusters, my location |
+| **Extras** | Snapshots, autocomplete/places search, geocode/reverse geocode |
 
-See [THIRD_PARTY_LICENSES](./THIRD_PARTY_LICENSES) and the [legal/](./legal/) folder.
+## Use cases
+
+- Store locators and field-service maps with live GPS
+- Delivery and fleet dashboards with markers and routes
+- Event venues, real-estate listings, and travel apps
+- Any Capacitor app that today embeds Google Maps on Android/web and needs a **zero–Google-keys iOS** path via MapKit
+
+## Quick start
+
+```bash
+npm install @capgo/capacitor-native-map
+npx cap sync
+```
+
+```ts
+import { NativeMap } from '@capgo/capacitor-native-map';
+
+const map = await NativeMap.create({
+  id: 'main-map',
+  element: document.getElementById('map')!,
+  apiKey: 'YOUR_GOOGLE_MAPS_API_KEY', // web + Android
+  config: {
+    center: { lat: 37.7749, lng: -122.4194 },
+    zoom: 12,
+  },
+});
+
+map.setOnMapClickListener((e) => console.log('click', e));
+```
+
+**Platform keys**
+
+- **iOS**: MapKit — no Google API key; add location usage strings in `Info.plist` if you use current location.
+- **Android**: Google Maps SDK — set `GOOGLE_MAPS_API_KEY` in the app manifest (see `example-app`).
+- **Web**: Google Maps JS + Map ID for Advanced Markers — pass `apiKey` and `config.mapId` to `create`.
+
+The [example app](./example-app) is the fastest way to run on all three platforms.
+
+Credits: portions adapted from [katamalabs/capacitor-plugin-apple-maps](https://github.com/katamalabs/capacitor-plugin-apple-maps) and [ionic-team/capacitor-google-maps](https://github.com/ionic-team/capacitor-google-maps) (both MIT).
 
 ## Install
 

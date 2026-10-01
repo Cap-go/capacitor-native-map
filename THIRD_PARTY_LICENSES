@@ -1,8 +1,0 @@
-This plugin includes code adapted from the following third-party projects.
-See the legal/ directory for full license texts.
-
-- @capacitor/google-maps (Ionic Team, MIT): Android implementation and web fallback
-  https://github.com/ionic-team/capacitor-google-maps
-
-- capacitor-plugin-apple-maps (Katama Labs, MIT): iOS MapKit implementation
-  https://github.com/katamalabs/capacitor-plugin-apple-maps

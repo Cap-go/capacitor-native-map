@@ -513,6 +513,9 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
 
   async create(_args: CreateMapArgs): Promise<void> {
     console.log(`Create map: ${_args.id}`);
+    if (this.maps[_args.id] && !_args.forceCreate) {
+      return;
+    }
     if (!_args.apiKey) {
       throw new Error('apiKey is required when using NativeMap on web');
     }
