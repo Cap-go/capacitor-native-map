@@ -17,8 +17,7 @@
 **One TypeScript API for native maps in Capacitor apps:** Google Maps on Android, Apple MapKit on iOS, and Google Maps JS on the web. Ship markers, camera moves, shapes, clustering, search, and events from a single integration.
 
 <p align="center">
-  <img src="assets/readme-screenshot-ios.webp" width="280" alt="Native map with HTML overlay on iOS" />
-  <img src="assets/readme-screenshot-android.webp" width="280" alt="Native map with HTML overlay on Android" />
+  <img src="assets/readme-screenshot-ios.webp" width="280" alt="Native map with HTML overlay on iOS (example app, toBack overlay mode)" />
 </p>
 
 Docs: [Native Map plugin](https://capgo.app/docs/plugins/native-map/) · Tutorial: [capacitor-native-map](https://capgo.app/plugins/capacitor-native-map/)
