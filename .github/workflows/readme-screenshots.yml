@@ -1,0 +1,136 @@
+name: Capture README screenshots
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+      - name: Build plugin and example app
+        run: |
+          set -euo pipefail
+          bun install
+          bun run build
+          cd example-app
+          bun install
+          bun run build
+          bunx cap sync ios
+      - name: Build for iOS Simulator
+        run: |
+          set -euo pipefail
+          cd example-app/ios/App
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" \
+            -destination 'platform=iOS Simulator,name=iPhone 16,OS=latest' \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Launch app and capture screenshot
+        run: |
+          set -euo pipefail
+          DEVICE_NAME="iPhone 16"
+          xcrun simctl boot "$DEVICE_NAME" 2>/dev/null || true
+          xcrun simctl bootstatus booted -b
+          APP_PATH="$(find "$RUNNER_TEMP/DerivedData" -name 'App.app' -path '*iphonesimulator*' | head -1)"
+          if [ -z "$APP_PATH" ]; then
+            echo "Could not find App.app in DerivedData"
+            exit 1
+          fi
+          xcrun simctl install booted "$APP_PATH"
+          xcrun simctl launch booted app.capgo.nativemap
+          sleep 25
+          xcrun simctl io booted screenshot "$GITHUB_WORKSPACE/readme-screenshot-ios.png"
+      - name: Upload iOS screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-screenshot-ios
+          path: readme-screenshot-ios.png
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+      - uses: oven-sh/setup-bun@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+      - name: Setup Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: zulu
+          java-version: 21
+      - name: Record Google Maps API key availability
+        id: maps_key
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${GOOGLE_MAPS_API_KEY:-}" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "google_maps_api_key_present=${GOOGLE_MAPS_API_KEY:+true}" > maps-key-status.txt
+          if [ -z "${GOOGLE_MAPS_API_KEY:-}" ]; then
+            echo "google_maps_api_key_present=false" > maps-key-status.txt
+          else
+            echo "google_maps_api_key_present=true" > maps-key-status.txt
+          fi
+      - name: Build plugin and example app
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          set -euo pipefail
+          bun install
+          bun run build
+          cd example-app
+          bun install
+          bun run build
+          bunx cap sync android
+      - name: Run emulator, install app, capture screenshot
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: |
+            set -euo pipefail
+            cd example-app/android
+            ./gradlew assembleDebug
+            adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n app.capgo.nativemap/.MainActivity
+            sleep 30
+            adb exec-out screencap -p > "$GITHUB_WORKSPACE/readme-screenshot-android.png"
+      - name: Upload Android screenshot and key status
+        uses: actions/upload-artifact@v4
+        with:
+          name: readme-screenshot-android
+          path: |
+            readme-screenshot-android.png
+            maps-key-status.txt
+          if-no-files-found: error
