@@ -173,11 +173,17 @@ export class NativeMap {
     options: CreateMapArgs,
     callback?: MapListenerCallback<MapReadyCallbackData>,
   ): Promise<NativeMap> {
-    if (options.forceCreate) {
-      const replaced = NativeMap.activeMapsById.get(options.id);
-      if (replaced) {
-        replaced.abandonAfterNativeForceReplace();
+    const existingMap = NativeMap.activeMapsById.get(options.id);
+    if (existingMap && !options.forceCreate) {
+      if (callback) {
+        const onMapReadyListener = await CapacitorNativeMap.addListener('onMapReady', (data: MapReadyCallbackData) => {
+          if (data.mapId === options.id) {
+            callback(data);
+            onMapReadyListener.remove();
+          }
+        });
       }
+      return existingMap;
     }
 
     const newMap = new NativeMap(options.id);
@@ -339,6 +345,12 @@ export class NativeMap {
       await new Promise((resolve, reject) => {
         setTimeout(async () => {
           try {
+            if (options.forceCreate) {
+              const replaced = NativeMap.activeMapsById.get(options.id);
+              if (replaced && replaced !== newMap) {
+                replaced.abandonAfterNativeForceReplace();
+              }
+            }
             await CapacitorNativeMap.create(createOptions);
             resolve(undefined);
           } catch (err) {
@@ -633,6 +645,10 @@ export class NativeMap {
    * Destroy the current instance of the map
    */
   async destroy(): Promise<void> {
+    if (NativeMap.activeMapsById.get(this.id) !== this) {
+      return;
+    }
+
     if (Capacitor.getPlatform() == 'android') {
       this.disableScrolling();
     }
