@@ -103,7 +103,7 @@ class CapacitorNativeMapView(
                 val webParent = (bridge.webView.parent) as ViewGroup
                 if (toBack) {
                     webParent.addView(parent, 0)
-                    ToBackCompositorHelper.onToBackMapCreated(webView)
+                    ToBackCompositorHelper.onToBackMapCreated(bridge.webView)
                     applyToBackVisualState(bridge)
                 } else {
                     webParent.addView(parent)
