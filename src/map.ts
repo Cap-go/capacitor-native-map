@@ -24,6 +24,7 @@ import type {
 import { LatLngBounds, MapType } from './definitions';
 import type { CreateMapArgs } from './implementation';
 import { CapacitorNativeMap } from './implementation';
+import { installIosTouchRoutingCachePublisher, uninstallIosTouchRoutingCachePublisher } from './touch-routing';
 
 export interface NativeMapInterface {
   create(options: CreateMapArgs, callback?: MapListenerCallback<MapReadyCallbackData>): Promise<NativeMap>;
@@ -217,6 +218,9 @@ export class NativeMap {
       if (NativeMap.toBackMapCount === 1) {
         document.documentElement.classList.add('native-map-to-back');
         document.body.classList.add('native-map-to-back');
+        if (Capacitor.getPlatform() === 'ios') {
+          installIosTouchRoutingCachePublisher();
+        }
       }
     } else {
       elementBounds = await NativeMap.getElementBounds(hostElement);
@@ -357,6 +361,9 @@ export class NativeMap {
     if (NativeMap.toBackMapCount === 0) {
       document.documentElement.classList.remove('native-map-to-back');
       document.body.classList.remove('native-map-to-back');
+      if (Capacitor.getPlatform() === 'ios') {
+        uninstallIosTouchRoutingCachePublisher();
+      }
     }
   }
 

@@ -157,7 +157,13 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     host.style.top = '0';
     host.style.width = '100%';
     host.style.height = '100%';
-    document.body.appendChild(host);
+    host.style.zIndex = '0';
+    const firstChild = document.body.firstChild;
+    if (firstChild) {
+      document.body.insertBefore(host, firstChild);
+    } else {
+      document.body.appendChild(host);
+    }
     return host;
   }
 

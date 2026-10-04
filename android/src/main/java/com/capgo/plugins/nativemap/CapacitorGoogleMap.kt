@@ -103,7 +103,7 @@ class CapacitorNativeMapView(
                 val webParent = (bridge.webView.parent) as ViewGroup
                 if (toBack) {
                     webParent.addView(parent, 0)
-                    ToBackCompositorHelper.onToBackMapCreated(bridge.webView)
+                    ToBackCompositorHelper.onToBackMapCreated(bridge.webView, id)
                     applyToBackVisualState(bridge)
                 } else {
                     webParent.addView(parent)
@@ -261,7 +261,7 @@ class CapacitorNativeMapView(
                             ((bridge.webView.parent) as ViewGroup).removeView(viewToRemove)
                         }
                         if (toBack) {
-                            ToBackCompositorHelper.onToBackMapDestroyed(bridge.webView)
+                            ToBackCompositorHelper.onToBackMapDestroyed(bridge.webView, id)
                         }
                         mapView.onDestroy()
                         googleMap = null

@@ -9,7 +9,7 @@ import android.webkit.WebView
  * Policy for Android `toBack` compositing: native map behind the Capacitor WebView.
  */
 object ToBackCompositorHelper {
-    private var toBackMapCount = 0
+    private val acquiredMapIds: MutableSet<String> = mutableSetOf()
     private var savedParentBackgroundColor: Int? = null
 
     fun shouldTransparentizeWebViewParent(): Boolean = true
@@ -22,9 +22,11 @@ object ToBackCompositorHelper {
 
     fun resolveWebViewLayerType(): Int = View.LAYER_TYPE_HARDWARE
 
-    fun onToBackMapCreated(webView: WebView) {
-        toBackMapCount += 1
-        if (toBackMapCount != 1) {
+    fun onToBackMapCreated(webView: WebView, mapId: String) {
+        if (!acquiredMapIds.add(mapId)) {
+            return
+        }
+        if (acquiredMapIds.size != 1) {
             return
         }
         val parent = webView.parent as? View
@@ -32,12 +34,11 @@ object ToBackCompositorHelper {
                 (parent?.background as? ColorDrawable)?.color ?: parent?.solidBackgroundColor()
     }
 
-    fun onToBackMapDestroyed(webView: WebView) {
-        if (toBackMapCount <= 0) {
+    fun onToBackMapDestroyed(webView: WebView, mapId: String) {
+        if (!acquiredMapIds.remove(mapId)) {
             return
         }
-        toBackMapCount -= 1
-        if (toBackMapCount != 0) {
+        if (acquiredMapIds.isNotEmpty()) {
             return
         }
         val parent = webView.parent as? View

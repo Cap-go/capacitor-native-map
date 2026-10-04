@@ -113,6 +113,7 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
 
     override public func load() {
         WKWebView.registerTouchRouting(plugin: self)
+        TouchRoutingBridge.install(on: bridge?.webView)
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleDidBecomeActive),

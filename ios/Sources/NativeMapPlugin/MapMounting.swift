@@ -61,9 +61,9 @@ extension Map {
                 if self.mapView.superview !== webView {
                     self.mapView.removeFromSuperview()
                     webView.addSubview(self.mapView)
+                    webView.sendSubviewToBack(self.mapView)
                 }
                 self.mapView.frame = frame
-                webView.sendSubviewToBack(self.mapView)
                 self.targetView = webView
                 self.mapView.isHidden = !self.isMapVisible
                 return

@@ -87,7 +87,7 @@ Sync the plugin with CocoaPods or Swift Package Manager (both are supported).
     android:value="${GOOGLE_MAPS_API_KEY}" />
 ```
 
-3. Provide `GOOGLE_MAPS_API_KEY` when building (Gradle placeholder in `example-app/android/app/build.gradle`).
+3. Provide `GOOGLE_MAPS_API_KEY` when building (Gradle manifest variable in `example-app/android/app/build.gradle`).
 
 ## Usage
 
@@ -205,7 +205,7 @@ bun run build
 bunx cap sync
 ```
 
-Set `VITE_GOOGLE_MAPS_API_KEY` in `example-app/.env` for the web dev server. Android native builds use `GOOGLE_MAPS_API_KEY` for the Gradle manifest placeholder (see `example-app/android/app/build.gradle`). iOS uses MapKit without a Google key.
+Set `VITE_GOOGLE_MAPS_API_KEY` in `example-app/.env` for the web dev server. Android native builds use `GOOGLE_MAPS_API_KEY` for the Gradle manifest variable (see `example-app/android/app/build.gradle`). iOS uses MapKit without a Google key.
 
 Credits: portions adapted from [katamalabs/capacitor-plugin-apple-maps](https://github.com/katamalabs/capacitor-plugin-apple-maps) and [ionic-team/capacitor-google-maps](https://github.com/ionic-team/capacitor-google-maps) (both MIT).
 
