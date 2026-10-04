@@ -122,6 +122,11 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
         )
     }
 
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+        TouchRoutingBridge.uninstall(from: bridge?.webView)
+    }
+
     /// After the app returns to the foreground WebKit can rebuild its scroll-view
     /// hierarchy, orphaning the native map's touch handling (it still renders but
     /// gestures stop working). Re-mount each map into its current container.

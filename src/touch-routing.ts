@@ -3,7 +3,57 @@ const INTERACTIVE_SELECTOR =
 
 const IOS_TOUCH_ROUTING_HANDLER = 'nativeMapTouchRouting';
 
+const MUTATION_ATTRIBUTE_FILTER = ['class', 'style', 'role', 'contenteditable', 'data-map-overlay'];
+
 export type WebCaptureRect = { x: number; y: number; width: number; height: number };
+
+function parseBackgroundAlpha(color: string): number {
+  if (color === 'transparent') {
+    return 0;
+  }
+  const rgbaMatch = color.match(/rgba?\(\s*([^)]+)\)/i);
+  if (rgbaMatch) {
+    const parts = rgbaMatch[1].split(',').map((part) => part.trim());
+    if (parts.length >= 4) {
+      return parseFloat(parts[3]);
+    }
+    return 1;
+  }
+  return 1;
+}
+
+function backgroundBlocksTouches(style: CSSStyleDeclaration): boolean {
+  const bg = style.backgroundColor;
+  if (!bg || bg === 'transparent') {
+    return false;
+  }
+  if (parseBackgroundAlpha(bg) <= 0.05) {
+    return false;
+  }
+  const opacity = parseFloat(style.opacity || '1');
+  return opacity > 0.05;
+}
+
+function isCaptureEligible(el: Element): boolean {
+  if (!(el instanceof HTMLElement)) {
+    return false;
+  }
+  let current: HTMLElement | null = el;
+  while (current && current !== document.documentElement) {
+    const style = window.getComputedStyle(current);
+    if (style.display === 'none' || style.visibility === 'hidden') {
+      return false;
+    }
+    if (parseFloat(style.opacity || '1') <= 0.05) {
+      return false;
+    }
+    if (style.pointerEvents === 'none') {
+      return false;
+    }
+    current = current.parentElement;
+  }
+  return true;
+}
 
 /** Regions where the WebView should keep the touch (not the native map). */
 export function collectWebCaptureRects(): WebCaptureRect[] {
@@ -11,7 +61,7 @@ export function collectWebCaptureRects(): WebCaptureRect[] {
   const seen = new WeakSet<Element>();
 
   const addRect = (el: Element): void => {
-    if (seen.has(el)) {
+    if (seen.has(el) || !isCaptureEligible(el)) {
       return;
     }
     seen.add(el);
@@ -33,12 +83,8 @@ export function collectWebCaptureRects(): WebCaptureRect[] {
       continue;
     }
     const style = window.getComputedStyle(el);
-    const bg = style.backgroundColor;
-    if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-      const opacity = parseFloat(style.opacity || '1');
-      if (opacity > 0.05) {
-        addRect(el);
-      }
+    if (backgroundBlocksTouches(style)) {
+      addRect(el);
     }
   }
 
@@ -81,7 +127,7 @@ export function installIosTouchRoutingCachePublisher(): void {
     childList: true,
     subtree: true,
     attributes: true,
-    attributeFilter: ['class', 'style'],
+    attributeFilter: MUTATION_ATTRIBUTE_FILTER,
   });
   iosTouchRoutingOnLayout();
 }
@@ -126,12 +172,8 @@ export function shouldRouteTouchToMap(x: number, y: number, mapId: string, toBac
   let current: HTMLElement | null = elem;
   while (current && current !== document.documentElement) {
     const style = window.getComputedStyle(current);
-    const bg = style.backgroundColor;
-    if (bg && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'transparent') {
-      const opacity = parseFloat(style.opacity || '1');
-      if (opacity > 0.05) {
-        return false;
-      }
+    if (backgroundBlocksTouches(style)) {
+      return false;
     }
     current = current.parentElement;
   }

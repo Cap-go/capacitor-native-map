@@ -23,10 +23,14 @@ enum TouchRoutingCache {
         return true
     }
 
-    static func clearRects(for webView: WKWebView) {
+    static func clearRects(forWebViewKey key: ObjectIdentifier) {
         lock.lock()
-        webCaptureRects.removeValue(forKey: ObjectIdentifier(webView))
+        webCaptureRects.removeValue(forKey: key)
         lock.unlock()
+    }
+
+    static func clearRects(for webView: WKWebView) {
+        clearRects(forWebViewKey: ObjectIdentifier(webView))
     }
 }
 
@@ -40,7 +44,9 @@ final class TouchRoutingMessageHandler: NSObject, WKScriptMessageHandler {
     }
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
-        guard message.name == Self.handlerName, let webView = webView else { return }
+        guard message.name == Self.handlerName,
+              let webView = webView,
+              message.webView === webView else { return }
         guard let body = message.body as? [[String: Any]] else { return }
         let rects = body.compactMap { item -> CGRect? in
             guard let x = item["x"] as? Double,
@@ -54,23 +60,40 @@ final class TouchRoutingMessageHandler: NSObject, WKScriptMessageHandler {
 }
 
 enum TouchRoutingBridge {
-    private static var installedWebViews: [ObjectIdentifier: (proxy: TouchRoutingMessageProxy, handler: TouchRoutingMessageHandler)] = [:]
+    private struct Installation {
+        weak var webView: WKWebView?
+        let proxy: TouchRoutingMessageProxy
+        let handler: TouchRoutingMessageHandler
+    }
+
+    private static var installedWebViews: [ObjectIdentifier: Installation] = [:]
+
+    private static func purgeStaleInstallations() {
+        for (key, install) in installedWebViews where install.webView == nil {
+            installedWebViews.removeValue(forKey: key)
+            TouchRoutingCache.clearRects(forWebViewKey: key)
+        }
+    }
 
     static func install(on webView: WKWebView?) {
+        purgeStaleInstallations()
         guard let webView = webView else { return }
         let key = ObjectIdentifier(webView)
-        guard installedWebViews[key] == nil else { return }
+        if let existing = installedWebViews[key], existing.webView === webView {
+            return
+        }
 
         let handler = TouchRoutingMessageHandler(webView: webView)
         let proxy = TouchRoutingMessageProxy(handler: handler)
         webView.configuration.userContentController.add(proxy, name: TouchRoutingMessageHandler.handlerName)
-        installedWebViews[key] = (proxy, handler)
+        installedWebViews[key] = Installation(webView: webView, proxy: proxy, handler: handler)
     }
 
     static func uninstall(from webView: WKWebView?) {
+        purgeStaleInstallations()
         guard let webView = webView else { return }
         let key = ObjectIdentifier(webView)
-        guard let pair = installedWebViews.removeValue(forKey: key) else { return }
+        guard installedWebViews.removeValue(forKey: key) != nil else { return }
         webView.configuration.userContentController.removeScriptMessageHandler(forName: TouchRoutingMessageHandler.handlerName)
         TouchRoutingCache.clearRects(for: webView)
     }

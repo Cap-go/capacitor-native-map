@@ -104,6 +104,8 @@ enum ToBackCompositor {
             if state.toBackMapCount == 0 {
                 states.removeValue(forKey: ObjectIdentifier(webView))
             }
+            webView.setNeedsLayout()
+            webView.layoutIfNeeded()
         }
     }
 }

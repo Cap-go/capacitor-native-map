@@ -123,6 +123,7 @@ customElements.define('capacitor-native-map', MapCustomElement);
 
 export class NativeMap {
   private static toBackMapCount = 0;
+  private static activeMapsById = new Map<string, NativeMap>();
 
   private id: string;
   private element: HTMLElement | null = null;
@@ -172,6 +173,13 @@ export class NativeMap {
     options: CreateMapArgs,
     callback?: MapListenerCallback<MapReadyCallbackData>,
   ): Promise<NativeMap> {
+    if (options.forceCreate) {
+      const replaced = NativeMap.activeMapsById.get(options.id);
+      if (replaced) {
+        replaced.abandonAfterNativeForceReplace();
+      }
+    }
+
     const newMap = new NativeMap(options.id);
 
     const toBack = options.toBack === true;
@@ -343,7 +351,32 @@ export class NativeMap {
       throw err;
     }
 
+    NativeMap.activeMapsById.set(options.id, newMap);
     return newMap;
+  }
+
+  /**
+   * Native `forceCreate` already destroyed the map instance; release JS-side toBack ownership only.
+   */
+  private abandonAfterNativeForceReplace(): void {
+    NativeMap.activeMapsById.delete(this.id);
+
+    if (Capacitor.isNativePlatform()) {
+      this.resizeObserver?.disconnect();
+      if (this.windowResizeHandler) {
+        window.removeEventListener('resize', this.windowResizeHandler);
+        this.windowResizeHandler = undefined;
+      }
+      this.disableScrolling();
+    }
+
+    if (this.toBack) {
+      NativeMap.releaseToBackDocumentClasses();
+      this.toBackLayout = undefined;
+      this.toBack = false;
+    }
+
+    this.removeAllMapListeners();
   }
 
   private mapBoundsForNative(): { x: number; y: number; width: number; height: number } {
@@ -618,6 +651,8 @@ export class NativeMap {
     }
 
     this.removeAllMapListeners();
+
+    NativeMap.activeMapsById.delete(this.id);
 
     return CapacitorNativeMap.destroy({
       id: this.id,
