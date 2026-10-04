@@ -66,6 +66,9 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
                                 if (touchEnabled[id] == false) {
                                     continue
                                 }
+                                if (!map.isMapVisible) {
+                                    continue
+                                }
                                 val mapRect = map.getMapBounds()
                                 if (mapRect.contains(touchX.toInt(), touchY.toInt())) {
                                     if (event.action == MotionEvent.ACTION_DOWN) {

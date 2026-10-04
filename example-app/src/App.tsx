@@ -84,7 +84,7 @@ const App = () => {
   return (
     <main className={`app ${mode === 'overlay' ? 'app-overlay' : ''}`}>
       {mode === 'overlay' && (
-        <div className="map-overlay-ui" data-native-map-overlay-root>
+        <div className="map-overlay-ui">
           <header className="overlay-bar" data-map-overlay>
             <h1>Native map behind HTML</h1>
             <p>Buttons stay in the WebView. Open areas pass gestures to the map.</p>

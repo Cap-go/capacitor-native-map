@@ -167,7 +167,7 @@ body.native-map-to-back {
 ### Full HTML overlay example
 
 ```html
-<div class="map-overlay-root" data-native-map-overlay-root>
+<div class="map-overlay-root">
   <header class="hud" data-map-overlay>
     <h1>Nearby stores</h1>
     <button type="button" id="recenter">Recenter</button>

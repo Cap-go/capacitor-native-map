@@ -38,6 +38,7 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
   private maps: {
     [id: string]: {
       element: HTMLElement;
+      ownsElement: boolean;
       map: google.maps.Map;
       markers: {
         [id: string]: google.maps.marker.AdvancedMarkerElement;
@@ -148,12 +149,27 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     this.maps[_args.id].map.setOptions({ gestureHandling: 'none' });
   }
 
+  private createOwnedMapHost(id: string): HTMLElement {
+    const host = document.createElement('div');
+    host.dataset.capacitorNativeMapHost = id;
+    host.style.position = 'absolute';
+    host.style.left = '0';
+    host.style.top = '0';
+    host.style.width = '100%';
+    host.style.height = '100%';
+    document.body.appendChild(host);
+    return host;
+  }
+
   async updateLayout(_args: { id: string; x?: number; y?: number; width?: number; height?: number }): Promise<void> {
     const entry = this.maps[_args.id];
     if (!entry) {
       return;
     }
     const el = entry.element;
+    if (_args.x != null || _args.y != null) {
+      el.style.position = 'absolute';
+    }
     if (_args.x != null) {
       el.style.left = `${_args.x}px`;
     }
@@ -560,9 +576,12 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
       throw new Error('config.mapId is required on web (create a Map ID in Google Cloud Console for Advanced Markers)');
     }
 
+    const ownsElement = _args.element == null;
+    const element = _args.element ?? this.createOwnedMapHost(_args.id);
     this.maps[_args.id] = {
-      map: new window.google.maps.Map(_args.element ?? document.body, config),
-      element: _args.element ?? document.body,
+      map: new window.google.maps.Map(element, config),
+      element,
+      ownsElement,
       markers: {},
       tileOverlays: {},
       polygons: {},
@@ -577,6 +596,9 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     const mapItem = this.maps[_args.id];
     mapItem.element.innerHTML = '';
     mapItem.map.unbindAll();
+    if (mapItem.ownsElement) {
+      mapItem.element.remove();
+    }
     delete this.maps[_args.id];
   }
 

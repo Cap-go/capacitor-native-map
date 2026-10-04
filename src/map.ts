@@ -315,6 +315,7 @@ export class NativeMap {
           window.removeEventListener('resize', newMap.windowResizeHandler);
           newMap.windowResizeHandler = undefined;
         }
+        newMap.disableScrolling();
       }
       if (toBack) {
         NativeMap.releaseToBackDocumentClasses();

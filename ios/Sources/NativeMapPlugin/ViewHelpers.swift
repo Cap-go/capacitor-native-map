@@ -25,7 +25,7 @@ extension WKWebView {
 
         if let plugin = WKWebView.touchRoutingPlugin,
            let map = plugin.toBackMap(containing: point, in: self) {
-            if shouldPassTouchThroughToMap(hitView) {
+            if shouldPassTouchThroughToMap(hitView, at: point, in: self, plugin: plugin) {
                 let converted = convert(point, to: map.mapView)
                 return map.mapView.hitTest(converted, with: event) ?? hitView
             }
@@ -45,14 +45,19 @@ extension WKWebView {
     }
 }
 
-private func shouldPassTouchThroughToMap(_ hitView: UIView?) -> Bool {
+private func shouldPassTouchThroughToMap(
+    _ hitView: UIView?,
+    at point: CGPoint,
+    in webView: WKWebView,
+    plugin: NativeMapPlugin
+) -> Bool {
     guard let hitView = hitView else { return true }
     if hitView is UIControl {
         return false
     }
     let name = String(describing: type(of: hitView))
     if name.contains("WKContentView") {
-        return false
+        return plugin.shouldRouteTouchToMap(at: point, in: webView)
     }
     if let childScrollClass = NSClassFromString("WKChildScrollView"),
        hitView.isKind(of: childScrollClass) {

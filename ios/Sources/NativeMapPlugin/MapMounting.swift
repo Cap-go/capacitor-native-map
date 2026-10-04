@@ -51,6 +51,24 @@ extension Map {
     /// touch handling. Keeps the existing mount if a container can't be found.
     func remountIntoContainer() {
         DispatchQueue.main.async {
+            if self.toBack, let webView = self.delegate?.bridge?.webView {
+                let frame = CGRect(
+                    x: self.config.x,
+                    y: self.config.y,
+                    width: self.config.width,
+                    height: self.config.height
+                )
+                if self.mapView.superview !== webView {
+                    self.mapView.removeFromSuperview()
+                    webView.addSubview(self.mapView)
+                }
+                self.mapView.frame = frame
+                webView.sendSubviewToBack(self.mapView)
+                self.targetView = webView
+                self.mapView.isHidden = !self.isMapVisible
+                return
+            }
+
             let width = round(Double(self.mapView.bounds.width))
             let height = round(Double(self.mapView.bounds.height))
             guard width > 0, height > 0 else { return }

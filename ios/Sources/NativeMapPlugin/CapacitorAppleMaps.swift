@@ -292,7 +292,7 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
                 self.mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
                 webView.addSubview(self.mapView)
                 webView.sendSubviewToBack(self.mapView)
-                ToBackCompositor.applyTransparentWebView(webView)
+                ToBackCompositor.acquireTransparentWebView(webView)
                 self.targetView = webView
                 self.mapView.isHidden = !self.isMapVisible
             } else {
@@ -323,9 +323,13 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
     func destroy() {
         DispatchQueue.main.async {
             self.dismissCallout()
+            let webView = self.delegate?.bridge?.webView
             self.mapView.removeFromSuperview()
             self.mapView.delegate = nil
             self.targetView?.tag = 0
+            if self.toBack {
+                ToBackCompositor.releaseTransparentWebView(webView)
+            }
         }
     }
 
@@ -335,7 +339,11 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
         config.width = bounds.size.width
         config.height = bounds.size.height
         runOnMainSync {
-            self.mapView.frame = bounds
+            if self.toBack {
+                self.mapView.frame = bounds
+            } else {
+                self.mapView.frame = CGRect(origin: .zero, size: bounds.size)
+            }
         }
     }
 

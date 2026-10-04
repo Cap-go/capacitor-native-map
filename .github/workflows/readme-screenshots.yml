@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}-${{ github.run_id }}
+  group: readme-screenshots-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   ios:
     runs-on: macos-latest
-    timeout-minutes: 30
+    timeout-minutes: 10
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -92,7 +92,7 @@ jobs:
 
   android:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -149,7 +149,7 @@ jobs:
           target: google_apis
           profile: pixel_4
           disable-animations: false
-          emulator-boot-timeout-minutes: 45
+          emulator-boot-timeout-minutes: 10
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           script: bash .github/scripts/capture-android-readme-screenshot.sh
       - name: Upload Android screenshot and key status
