@@ -1,0 +1,4 @@
+---
+- launchApp:
+    clearState: true
+- runFlow: ../flows/native-map-smoke.yaml

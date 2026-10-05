@@ -1,0 +1,32 @@
+{
+  "name": "native-map-example",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "sync": "bunx cap sync",
+    "sync:ios": "bunx cap sync ios",
+    "sync:android": "bunx cap sync android",
+    "ios": "bunx cap run ios",
+    "android": "bunx cap run android"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.5.2",
+    "@capgo/capacitor-native-map": "..",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.5.2",
+    "@capacitor/cli": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^6.0.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.0"
+  }
+}
