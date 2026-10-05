@@ -24,6 +24,7 @@ import type {
 import { LatLngBounds, MapType } from './definitions';
 import type { CreateMapArgs } from './implementation';
 import { CapacitorNativeMap } from './implementation';
+import { MapReadyQueue } from './map-ready';
 import { installIosTouchRoutingCachePublisher, uninstallIosTouchRoutingCachePublisher } from './touch-routing';
 
 export interface NativeMapInterface {
@@ -159,6 +160,9 @@ export class NativeMap {
   private onMyLocationButtonClickListener?: PluginListenerHandle;
   private onMyLocationClickListener?: PluginListenerHandle;
 
+  private readonly mapReadyQueue = new MapReadyQueue();
+  private onMapReadyListener?: PluginListenerHandle;
+
   private constructor(id: string) {
     this.id = id;
   }
@@ -176,12 +180,7 @@ export class NativeMap {
     const existingMap = NativeMap.activeMapsById.get(options.id);
     if (existingMap && !options.forceCreate) {
       if (callback) {
-        const onMapReadyListener = await CapacitorNativeMap.addListener('onMapReady', (data: MapReadyCallbackData) => {
-          if (data.mapId === options.id) {
-            callback(data);
-            onMapReadyListener.remove();
-          }
-        });
+        existingMap.whenMapReady(callback);
       }
       return existingMap;
     }
@@ -314,19 +313,14 @@ export class NativeMap {
       }
     }
 
-    let onMapReadyListener: PluginListenerHandle | undefined;
+    await newMap.attachMapReadyListener();
     if (callback) {
-      onMapReadyListener = await CapacitorNativeMap.addListener('onMapReady', (data: MapReadyCallbackData) => {
-        if (data.mapId == newMap.id) {
-          callback(data);
-          onMapReadyListener?.remove();
-        }
-      });
+      newMap.whenMapReady(callback);
     }
 
     // small delay to allow for iOS WKWebView to setup corresponding element sub-scroll views ???
     const cleanupFailedCreate = (): void => {
-      onMapReadyListener?.remove();
+      newMap.clearMapReadyState();
       if (Capacitor.isNativePlatform()) {
         newMap.resizeObserver?.disconnect();
         if (newMap.windowResizeHandler) {
@@ -372,6 +366,8 @@ export class NativeMap {
    */
   private abandonAfterNativeForceReplace(): void {
     NativeMap.activeMapsById.delete(this.id);
+
+    this.clearMapReadyState();
 
     if (Capacitor.isNativePlatform()) {
       this.resizeObserver?.disconnect();
@@ -667,6 +663,7 @@ export class NativeMap {
     }
 
     this.removeAllMapListeners();
+    this.clearMapReadyState();
 
     NativeMap.activeMapsById.delete(this.id);
 
@@ -1302,5 +1299,27 @@ export class NativeMap {
         callback(data);
       }
     };
+  }
+
+  whenMapReady(callback: MapListenerCallback<MapReadyCallbackData>): void {
+    this.mapReadyQueue.whenReady(callback);
+  }
+
+  private async attachMapReadyListener(): Promise<void> {
+    if (this.onMapReadyListener) {
+      return;
+    }
+    const mapId = this.id;
+    this.onMapReadyListener = await CapacitorNativeMap.addListener('onMapReady', (data: MapReadyCallbackData) => {
+      if (data.mapId === mapId) {
+        this.mapReadyQueue.deliver(data);
+      }
+    });
+  }
+
+  private clearMapReadyState(): void {
+    this.mapReadyQueue.clear();
+    this.onMapReadyListener?.remove();
+    this.onMapReadyListener = undefined;
   }
 }
