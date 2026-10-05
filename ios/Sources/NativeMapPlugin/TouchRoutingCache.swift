@@ -45,6 +45,7 @@ final class TouchRoutingMessageHandler: NSObject, WKScriptMessageHandler {
 
     func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
         guard message.name == Self.handlerName,
+              message.frameInfo.isMainFrame,
               let webView = webView,
               message.webView === webView else { return }
         guard let body = message.body as? [[String: Any]] else { return }

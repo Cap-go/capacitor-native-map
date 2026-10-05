@@ -52,6 +52,7 @@ class CapacitorNativeMapView(
     private val isReadyChannel = Channel<Boolean>()
     private var debounceJob: Job? = null
     private var mapViewParent: FrameLayout? = null
+    private var isDestroyed = false
     var toBack: Boolean = false
     var isMapVisible: Boolean = true
     private var originalWebViewAlpha: Float? = null
@@ -76,6 +77,7 @@ class CapacitorNativeMapView(
 
     private fun render() {
         CoroutineScope(Dispatchers.Main).launch {
+                if (isDestroyed) return@launch
                 val bridge = delegate.bridge
                 val parent = FrameLayout(bridge.context)
                 parent.minimumHeight = bridge.webView.height
@@ -253,6 +255,7 @@ class CapacitorNativeMapView(
         runBlocking {
             val job =
                     CoroutineScope(Dispatchers.Main).launch {
+                        isDestroyed = true
                         val bridge = delegate.bridge
 
                         val viewToRemove: View? =

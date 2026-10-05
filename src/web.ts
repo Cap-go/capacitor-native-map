@@ -583,6 +583,9 @@ export class CapacitorNativeMapWeb extends WebPlugin implements NativeMapPlugin 
     }
 
     const ownsElement = _args.element == null;
+    if (this.maps[_args.id]) {
+      await this.destroy({ id: _args.id });
+    }
     const element = _args.element ?? this.createOwnedMapHost(_args.id);
     this.maps[_args.id] = {
       map: new window.google.maps.Map(element, config),

@@ -341,11 +341,17 @@ export class NativeMap {
           try {
             if (options.forceCreate) {
               const replaced = NativeMap.activeMapsById.get(options.id);
-              if (replaced && replaced !== newMap) {
+              if (replaced && replaced !== newMap && Capacitor.isNativePlatform()) {
                 replaced.abandonAfterNativeForceReplace();
               }
             }
             await CapacitorNativeMap.create(createOptions);
+            if (options.forceCreate && !Capacitor.isNativePlatform()) {
+              const replaced = NativeMap.activeMapsById.get(options.id);
+              if (replaced && replaced !== newMap) {
+                replaced.abandonAfterNativeForceReplace();
+              }
+            }
             resolve(undefined);
           } catch (err) {
             reject(err);

@@ -76,6 +76,19 @@ describe('MapReadyQueue', () => {
     queue.deliver({ mapId: 'a' });
     expect(calls).toBe(1);
   });
+
+  test('continues draining when a callback throws', () => {
+    const queue = new MapReadyQueue();
+    let secondCalls = 0;
+    queue.whenReady(() => {
+      throw new Error('boom');
+    });
+    queue.whenReady(() => {
+      secondCalls += 1;
+    });
+    queue.deliver({ mapId: 'a' });
+    expect(secondCalls).toBe(1);
+  });
 });
 
 describe('NativeMap.create map ready', () => {
@@ -158,5 +171,35 @@ describe('NativeMap.create map ready', () => {
 
     emitMapReady('map-first');
     expect(calls).toBe(1);
+  });
+
+  test('web forceCreate keeps prior instance when replacement create fails', async () => {
+    const element = makeHostElement();
+    createImpl.mockImplementation(async () => undefined);
+
+    const first = await NativeMap.create({
+      id: 'force-web',
+      apiKey: 'test',
+      config: { center: { lat: 0, lng: 0 }, zoom: 1 },
+      element,
+    });
+    await waitForNativeCreate();
+
+    createImpl.mockImplementation(async () => {
+      throw new Error('create failed');
+    });
+
+    await expect(
+      NativeMap.create({
+        id: 'force-web',
+        forceCreate: true,
+        apiKey: 'test',
+        config: { center: { lat: 0, lng: 0 }, zoom: 1 },
+        element,
+      }),
+    ).rejects.toThrow('create failed');
+
+    const active = (NativeMap as unknown as { activeMapsById: Map<string, NativeMap> }).activeMapsById;
+    expect(active.get('force-web')).toBe(first);
   });
 });

@@ -14,7 +14,11 @@ export class MapReadyQueue {
     const callbacks = this.pending;
     this.pending = [];
     for (const cb of callbacks) {
-      cb(data);
+      try {
+        cb(data);
+      } catch {
+        // Keep draining remaining ready callbacks.
+      }
     }
   }
 
