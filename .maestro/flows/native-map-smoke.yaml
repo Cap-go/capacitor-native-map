@@ -1,0 +1,4 @@
+appId: app.capgo.nativemap
+name: Native map smoke
+---
+- assertVisible: "@capgo/capacitor-native-map"
