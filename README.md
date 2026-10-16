@@ -1,6 +1,14 @@
 # @capgo/capacitor-native-map
 
-<a href="https://capgo.app/"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-native-map" alt="Capgo - Instant updates for Capacitor" /></a>
+<a href="https://capgo.app/?ref=plugin_native_map"><img src="https://capgo.app/readme-banner.svg?repo=Cap-go/capacitor-native-map" alt="Capgo - Instant updates for Capacitor" /></a>
+
+<div align="center">
+  <p><b>Capgo</b>: push fixes to your Capacitor users in minutes, build signed iOS and Android apps without a Mac, and roll back in one click.</p>
+  <h2><a href="https://capgo.app/register/?ref=plugin_native_map">➡️ Get started for free</a></h2>
+  <p>14-day unlimited free trial. No credit card required</p>
+</div>
+
+Native maps for Capacitor: Google Maps on Android, Apple MapKit on iOS, and a web fallback.
 
 <div align="center">
   <h2><a href="https://capgo.app/?ref=plugin_native_map"> ➡️ Get instant updates for your app with Capgo</a></h2>
