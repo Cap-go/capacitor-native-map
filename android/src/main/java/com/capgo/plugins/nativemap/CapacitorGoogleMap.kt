@@ -1013,6 +1013,9 @@ class CapacitorNativeMapView(
     }
 
     override fun onMapReady(map: GoogleMap) {
+        if (isDestroyed) {
+            return
+        }
         googleMap = map
         setListeners()
 
@@ -1021,6 +1024,9 @@ class CapacitorNativeMapView(
         delegate.notify("onMapReady", data)
 
         CoroutineScope(Dispatchers.Main).launch {
+            if (isDestroyed) {
+                return@launch
+            }
             isReadyChannel.send(true)
             isReadyChannel.close()
         }

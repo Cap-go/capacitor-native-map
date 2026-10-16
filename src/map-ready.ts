@@ -16,8 +16,10 @@ export class MapReadyQueue {
     for (const cb of callbacks) {
       try {
         cb(data);
-      } catch {
-        // Keep draining remaining ready callbacks.
+      } catch (error) {
+        queueMicrotask(() => {
+          throw error;
+        });
       }
     }
   }
