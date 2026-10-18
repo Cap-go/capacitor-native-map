@@ -1,6 +1,6 @@
 {
   "name": "@capgo/capacitor-native-map",
-  "version": "8.0.0",
+  "version": "8.1.0",
   "description": "Native maps for Capacitor: Google Maps on Android, Apple MapKit on iOS, Google Maps JS on web",
   "license": "MPL-2.0",
   "main": "dist/plugin.cjs.js",
