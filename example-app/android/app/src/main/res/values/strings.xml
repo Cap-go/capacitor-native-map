@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Native Audio Example</string>
+    <string name="title_activity_main">Native Audio Example</string>
+    <string name="package_name">app.capgo.nativemap</string>
+    <string name="custom_url_scheme">app.capgo.nativemap</string>
+</resources>
