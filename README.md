@@ -441,15 +441,17 @@ await map.setOnMarkerDragEndListener(({ latitude, longitude }) => {
 // never leave two pins on the map.
 let pinUpdate = Promise.resolve();
 await map.setOnMapClickListener(({ latitude, longitude }) => {
-  pinUpdate = pinUpdate.then(async () => {
-    await map.removeMarker(pinId);
-    pinId = await map.addMarker({
-      coordinate: { lat: latitude, lng: longitude },
-      title: 'Deliver here',
-      draggable: true,
-    });
-    saveAddressCoordinate({ lat: latitude, lng: longitude });
-  });
+  pinUpdate = pinUpdate
+    .then(async () => {
+      await map.removeMarker(pinId);
+      pinId = await map.addMarker({
+        coordinate: { lat: latitude, lng: longitude },
+        title: 'Deliver here',
+        draggable: true,
+      });
+      saveAddressCoordinate({ lat: latitude, lng: longitude });
+    })
+    .catch((error) => console.error('could not move the pin', error)); // keep the queue alive
 });
 ```
 
