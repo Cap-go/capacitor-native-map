@@ -287,7 +287,7 @@ await map.addMarker({
   coordinate: { lat: 37.7897, lng: -122.4011 },
   iconUrl: 'assets/pins/coffee.png',
   iconSize: { width: 36, height: 48 },
-  iconAnchor: { x: 18, y: 48 }, // bottom-center of the image touches the coordinate
+  iconAnchor: { x: 0.5, y: 1 }, // fractions of the icon size: bottom-center touches the coordinate
 });
 ```
 
@@ -303,18 +303,22 @@ const route = [
   { lat: 48.8867, lng: 2.3431 }, // Sacré-Cœur
 ];
 
-const [plannedId, doneId] = await map.addPolylines([
-  { path: route, strokeColor: '#94a3b8', strokeWeight: 6, tag: 'planned' },
-  { path: route.slice(0, 2), strokeColor: '#2563eb', strokeWeight: 6, tag: 'done' },
+// clickable: true is required for polyline taps on Android.
+let [plannedId, doneId] = await map.addPolylines([
+  { path: route, strokeColor: '#94a3b8', strokeWeight: 6, clickable: true },
+  { path: route.slice(0, 2), strokeColor: '#2563eb', strokeWeight: 6, clickable: true },
 ]);
 
-await map.setOnPolylineClickListener(({ polylineId, tag }) => {
-  console.log('tapped route segment', polylineId, tag);
+// Use the returned IDs to know which line was tapped (iOS does not send `tag` back).
+await map.setOnPolylineClickListener(({ polylineId }) => {
+  console.log(polylineId === doneId ? 'tapped the covered part' : 'tapped the planned route');
 });
 
 // Later, when the driver moves on:
 await map.removePolylines([doneId]);
-await map.addPolylines([{ path: route.slice(0, 3), strokeColor: '#2563eb', strokeWeight: 6, tag: 'done' }]);
+[doneId] = await map.addPolylines([
+  { path: route.slice(0, 3), strokeColor: '#2563eb', strokeWeight: 6, clickable: true },
+]);
 ```
 
 On **Android** one polyline can have a different color for each segment, using `styleSpans`:
@@ -351,10 +355,10 @@ await map.addPolylines([
 
 ### 3. Delivery zones with circles and polygons
 
-Show a delivery radius around a shop and a neighborhood zone. Use `tag` to know which shape the user tapped.
+Show a delivery radius around a shop and a neighborhood zone. Keep the IDs returned by `addCircles` and `addPolygons` to know which shape the user tapped. Click events carry `tag` on Android only, so IDs are the way that works on both platforms.
 
 ```ts
-await map.addCircles([
+const [freeDeliveryId] = await map.addCircles([
   {
     center: { lat: 40.7128, lng: -74.006 },
     radius: 1500, // meters
@@ -363,11 +367,10 @@ await map.addCircles([
     strokeColor: '#2563eb',
     strokeWeight: 2,
     clickable: true,
-    tag: 'free-delivery',
   },
 ]);
 
-await map.addPolygons([
+const [eastVillageId] = await map.addPolygons([
   {
     paths: [
       { lat: 40.7306, lng: -73.9866 },
@@ -380,12 +383,16 @@ await map.addPolygons([
     strokeColor: '#d97706',
     strokeWeight: 2,
     clickable: true,
-    tag: 'east-village',
   },
 ]);
 
-await map.setOnCircleClickListener(({ tag }) => showToast(`Zone: ${tag}`));
-await map.setOnPolygonClickListener(({ tag }) => showToast(`Zone: ${tag}`));
+const zoneNames: Record<string, string> = {
+  [freeDeliveryId]: 'Free delivery',
+  [eastVillageId]: 'East Village',
+};
+
+await map.setOnCircleClickListener(({ circleId }) => showToast(`Zone: ${zoneNames[circleId]}`));
+await map.setOnPolygonClickListener(({ polygonId }) => showToast(`Zone: ${zoneNames[polygonId]}`));
 ```
 
 ### 4. Clustering thousands of points
@@ -660,6 +667,7 @@ await map.enableClustering();
 | Markers, clustering, drag | ✅ | ✅ |
 | Polylines, polygons, circles | ✅ | ✅ |
 | Polyline `styleSpans` | ➖ (uses `strokeColor`) | ✅ |
+| `tag` in shape click events | ➖ (use returned IDs) | ✅ |
 | Map types | Normal, Satellite, Hybrid | Normal, Satellite, Hybrid, Terrain, None |
 | Traffic layer | ✅ | ✅ |
 | Indoor maps | ➖ (no-op) | ✅ |
