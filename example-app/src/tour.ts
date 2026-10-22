@@ -4,7 +4,14 @@ import { LatLngBounds, MapType, type NativeMap } from '@capgo/capacitor-native-m
 export interface TourStep {
   title: string;
   detail: string;
-  run: (map: NativeMap, wait: (ms: number) => Promise<void>) => Promise<void>;
+  run: (ctx: StepContext) => Promise<void>;
+}
+
+/** What a step gets: the (guarded) map, a cancellable wait, and this run's cleanup list. */
+interface StepContext {
+  map: NativeMap;
+  wait: (ms: number) => Promise<void>;
+  cleanup: Cleanup;
 }
 
 /** Thrown inside a step once the tour is stopped, so it never touches a newer map. */
@@ -55,9 +62,9 @@ interface Cleanup {
   polygons: string[];
 }
 
-const cleanup: Cleanup = { markers: [], polylines: [], circles: [], polygons: [] };
+const emptyCleanup = (): Cleanup => ({ markers: [], polylines: [], circles: [], polygons: [] });
 
-export async function resetMap(map: NativeMap): Promise<void> {
+async function resetMap(map: NativeMap, cleanup: Cleanup): Promise<void> {
   if (cleanup.markers.length) await map.removeMarkers(cleanup.markers);
   if (cleanup.polylines.length) await map.removePolylines(cleanup.polylines);
   if (cleanup.circles.length) await map.removeCircles(cleanup.circles);
@@ -74,7 +81,7 @@ export const tourSteps: TourStep[] = [
   {
     title: 'Store locator',
     detail: 'addMarkers + tintColor + fitBounds',
-    run: async (map, wait) => {
+    run: async ({ map, wait, cleanup }) => {
       await map.setCamera({ coordinate: SF, zoom: 11, angle: 0, bearing: 0, animate: true });
       await wait(800);
       cleanup.markers = await map.addMarkers(
@@ -100,7 +107,7 @@ export const tourSteps: TourStep[] = [
   {
     title: 'Delivery zones',
     detail: 'addCircles + addPolygons',
-    run: async (map, wait) => {
+    run: async ({ map, wait, cleanup }) => {
       await map.setCamera({ coordinate: { lat: 37.7800, lng: -122.4150 }, zoom: 13, animate: true });
       cleanup.circles = await map.addCircles([
         {
@@ -131,7 +138,7 @@ export const tourSteps: TourStep[] = [
   {
     title: 'Delivery route',
     detail: 'addPolylines',
-    run: async (map, wait) => {
+    run: async ({ map, wait, cleanup }) => {
       await map.setCamera({ coordinate: { lat: 37.7820, lng: -122.4330 }, zoom: 13, animate: true });
       cleanup.polylines = await map.addPolylines([
         { path: route, strokeColor: '#94a3b8', strokeWeight: 10 },
@@ -146,7 +153,7 @@ export const tourSteps: TourStep[] = [
   {
     title: 'Clustering',
     detail: '500 markers + enableClustering',
-    run: async (map, wait) => {
+    run: async ({ map, wait, cleanup }) => {
       await map.setCamera({ coordinate: SF, zoom: 11, animate: true });
       await map.enableClustering(3);
       // Deterministic pseudo-random spread so every recording looks the same.
@@ -168,7 +175,7 @@ export const tourSteps: TourStep[] = [
   {
     title: '3D camera tour',
     detail: 'setCamera with angle + bearing',
-    run: async (map, wait) => {
+    run: async ({ map, wait, cleanup }) => {
       await map.setCamera({ coordinate: { lat: 37.7952, lng: -122.4028 }, zoom: 16.5, angle: 45, bearing: 30, animate: true });
       await wait(2200);
       await map.setCamera({ coordinate: { lat: 37.7897, lng: -122.3972 }, zoom: 17, angle: 45, bearing: 160, animate: true });
@@ -177,7 +184,7 @@ export const tourSteps: TourStep[] = [
   {
     title: 'Map types',
     detail: 'setMapType: Satellite → Hybrid',
-    run: async (map, wait) => {
+    run: async ({ map, wait, cleanup }) => {
       await map.setCamera({ coordinate: { lat: 37.8199, lng: -122.4783 }, zoom: 14, angle: 0, bearing: 0, animate: true });
       await wait(1000);
       await map.setMapType(MapType.Satellite);
@@ -195,6 +202,8 @@ export async function playTour(
   stepMs = 4500,
 ): Promise<void> {
   const guarded = guardMap(map, isCancelled);
+  // Per-run list, so a cancelled run can never overwrite another run's ids.
+  const cleanup = emptyCleanup();
   const wait = async (ms: number) => {
     await sleep(ms);
     if (isCancelled()) throw new TourCancelled();
@@ -202,9 +211,9 @@ export async function playTour(
   try {
     for (const [index, step] of tourSteps.entries()) {
       if (isCancelled()) return;
-      await resetMap(guarded);
+      await resetMap(guarded, cleanup);
       onStep(step, index);
-      await step.run(guarded, wait);
+      await step.run({ map: guarded, wait, cleanup });
       await wait(stepMs);
     }
   } catch (error) {

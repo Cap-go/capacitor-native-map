@@ -80,3 +80,4 @@ scripts/configure-dependencies.js
 # Local env (Google Maps key)
 example-app/.env
 example-app/.env.*
+!example-app/.env.example
