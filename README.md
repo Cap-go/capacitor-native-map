@@ -542,8 +542,13 @@ await map.setOnCameraMoveStartedListener(({ isGesture }) => {
 });
 
 await map.setOnCameraIdleListener(async ({ bounds, zoom }) => {
-  if (zoom < 11) return; // too far out, skip the query
   const requestId = ++latestRequest;
+  if (zoom < 11) {
+    // Too far out: clear the old markers and skip the query.
+    if (visibleIds.length) await map.removeMarkers(visibleIds);
+    visibleIds = [];
+    return;
+  }
   const { southwest, northeast } = bounds;
   const places = await fetch(
     `/api/places?sw=${southwest.lat},${southwest.lng}&ne=${northeast.lat},${northeast.lng}`,
