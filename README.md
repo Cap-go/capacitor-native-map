@@ -206,11 +206,18 @@ document.getElementById('recenter')?.addEventListener('click', () => {
 
 ## Demos for iOS and Android
 
-<p align="center">
-  <img src="assets/readme-screenshot-ios.webp" width="240" alt="Example app on iOS (Apple MapKit)" />
-  &nbsp;&nbsp;
-  <img src="assets/readme-screenshot-android.webp" width="240" alt="Example app on Android (Google Maps)" />
-</p>
+<table align="center">
+  <tr>
+    <th>iOS · Apple MapKit</th>
+    <th>Android · Google Maps</th>
+  </tr>
+  <tr>
+    <td><img src="assets/readme-demo-ios.webp" width="260" alt="Demo tour recorded on the iOS simulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
+    <td><img src="assets/readme-demo-android.webp" width="260" alt="Demo tour recorded on the Android emulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
+  </tr>
+</table>
+
+These recordings come from the [example app](./example-app)'s demo tour, running on a real iOS simulator and a real Android emulator. Build it with `VITE_DEMO_TOUR=1` to start the tour on launch, or tap **Demo tour** in the app.
 
 The same TypeScript runs on both platforms. iOS draws it with **Apple MapKit** and Android draws it with the **Google Maps SDK**. Each demo shows whether it works on both platforms or only one.
 
@@ -229,6 +236,8 @@ The same TypeScript runs on both platforms. iOS draws it with **Apple MapKit** a
 | [Night mode style and tile overlays](#11-android-only-night-mode-style-and-tile-overlays) | ➖ | ✅ |
 | [Static thumbnails in a list (lite mode)](#12-android-only-static-thumbnails-in-a-list-lite-mode) | ➖ | ✅ |
 | [Platform-aware feature detection](#13-platform-aware-feature-detection) | ✅ | ✅ |
+
+> **TypeScript 6 / custom `types`:** `Circle`, `Polyline`, `Polygon` and `NativeMapConfig` extend the Google Maps typings. TypeScript 6 no longer loads `@types` packages automatically, and neither does an older setup whose `tsconfig.json` sets `types`. In those cases, add `"google.maps"` to `compilerOptions.types`, or fields like `center` and `path` will not type-check.
 
 The snippets below assume an embedded map container such as `<div id="map" style="width: 100%; height: 400px"></div>`. On iOS the `apiKey` is ignored, so you can pass the same options on both platforms.
 
@@ -257,8 +266,9 @@ const markerIds = await map.addMarkers(
     coordinate: { lat: store.lat, lng: store.lng },
     title: store.name,
     snippet: store.open ? 'Open now' : 'Closed',
-    // tintColor recolors the default pin on iOS and Android (0-255 per channel).
-    tintColor: store.open ? { r: 16, g: 185, b: 129, a: 255 } : { r: 148, g: 163, b: 184, a: 255 },
+    // tintColor recolors the default pin (0-255 per channel). Android keeps only the hue,
+    // so use saturated colors: a grey tint turns into its hue (for example blue).
+    tintColor: store.open ? { r: 16, g: 185, b: 129, a: 255 } : { r: 239, g: 68, b: 68, a: 255 },
   })),
 );
 
@@ -321,13 +331,14 @@ await map.removePolylines([doneId]);
 ]);
 ```
 
-On **Android** one polyline can have a different color for each segment, using `styleSpans`:
+On **Android** one polyline can have a different color for each segment, using `styleSpans`. Spans need Google's latest map renderer, which the plugin requests and which devices with up-to-date Google Play services use. On the legacy renderer (for example some emulator images), the whole line falls back to `strokeColor`, so always set one:
 
 ```ts
 await map.addPolylines([
   {
     path: route,
     strokeWeight: 8,
+    strokeColor: '#22c55e', // fallback for the legacy renderer
     styleSpans: [
       { color: '#22c55e', segments: 1 }, // traffic is fine
       { color: '#f97316', segments: 1 }, // slow
@@ -682,6 +693,7 @@ await map.enableClustering();
 | --- | --- | --- |
 | API key | Not needed | `GOOGLE_MAPS_API_KEY` |
 | Markers, clustering, drag | ✅ | ✅ |
+| Marker `tintColor` | Full color | Hue only (greys become their hue) |
 | Polylines, polygons, circles | ✅ | ✅ |
 | Polyline `styleSpans` | ➖ (uses `strokeColor`) | ✅ |
 | `tag` in shape click events | ➖ (use returned IDs) | ✅ |
