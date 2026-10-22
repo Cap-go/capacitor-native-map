@@ -445,6 +445,7 @@ await map.setOnMapClickListener(async ({ latitude, longitude }) => {
     title: 'Deliver here',
     draggable: true,
   });
+  saveAddressCoordinate({ lat: latitude, lng: longitude });
 });
 ```
 
@@ -534,6 +535,7 @@ Fetch only the points that are on screen. Wait until the user stops moving the m
 
 ```ts
 let visibleIds: string[] = [];
+let latestRequest = 0;
 
 await map.setOnCameraMoveStartedListener(({ isGesture }) => {
   if (isGesture) hideSearchThisAreaButton();
@@ -541,10 +543,14 @@ await map.setOnCameraMoveStartedListener(({ isGesture }) => {
 
 await map.setOnCameraIdleListener(async ({ bounds, zoom }) => {
   if (zoom < 11) return; // too far out, skip the query
+  const requestId = ++latestRequest;
   const { southwest, northeast } = bounds;
   const places = await fetch(
     `/api/places?sw=${southwest.lat},${southwest.lng}&ne=${northeast.lat},${northeast.lng}`,
   ).then((r) => r.json());
+
+  // The user moved again while this request was loading: drop the stale result.
+  if (requestId !== latestRequest) return;
 
   if (visibleIds.length) await map.removeMarkers(visibleIds);
   visibleIds = await map.addMarkers(
