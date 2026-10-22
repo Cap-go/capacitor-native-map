@@ -437,15 +437,19 @@ await map.setOnMarkerDragEndListener(({ latitude, longitude }) => {
   saveAddressCoordinate({ lat: latitude, lng: longitude });
 });
 
-// Move the pin to wherever the user taps.
-await map.setOnMapClickListener(async ({ latitude, longitude }) => {
-  await map.removeMarker(pinId);
-  pinId = await map.addMarker({
-    coordinate: { lat: latitude, lng: longitude },
-    title: 'Deliver here',
-    draggable: true,
+// Move the pin to wherever the user taps. Taps are queued so quick double taps
+// never leave two pins on the map.
+let pinUpdate = Promise.resolve();
+await map.setOnMapClickListener(({ latitude, longitude }) => {
+  pinUpdate = pinUpdate.then(async () => {
+    await map.removeMarker(pinId);
+    pinId = await map.addMarker({
+      coordinate: { lat: latitude, lng: longitude },
+      title: 'Deliver here',
+      draggable: true,
+    });
+    saveAddressCoordinate({ lat: latitude, lng: longitude });
   });
-  saveAddressCoordinate({ lat: latitude, lng: longitude });
 });
 ```
 
