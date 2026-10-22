@@ -24,9 +24,18 @@ Native maps for Capacitor: Google Maps on Android, Apple MapKit on iOS, and a we
 
 **One TypeScript API for native maps in Capacitor apps:** Google Maps on Android, Apple MapKit on iOS, and Google Maps JS on the web. Ship markers, camera moves, shapes, clustering, search, and events from a single integration.
 
-<p align="center">
-  <img src="assets/readme-screenshot-ios.webp" width="280" alt="Native map with HTML overlay on iOS (example app, toBack overlay mode)" />
-</p>
+<table align="center">
+  <tr>
+    <th>iOS · Apple MapKit</th>
+    <th>Android · Google Maps</th>
+  </tr>
+  <tr>
+    <td><img src="assets/readme-demo-ios.webp" width="260" alt="Demo tour recorded on the iOS simulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
+    <td><img src="assets/readme-demo-android.webp" width="260" alt="Demo tour recorded on the Android emulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
+  </tr>
+</table>
+
+<p align="center"><sub>Recorded on a real iOS simulator and Android emulator with the <a href="./example-app">example app</a>'s demo tour. Code for each step: <a href="#demos-for-ios-and-android">Demos for iOS and Android</a>.</sub></p>
 
 Docs: [Native Map plugin](https://capgo.app/docs/plugins/native-map/) · Tutorial: [capacitor-native-map](https://capgo.app/plugins/capacitor-native-map/)
 
@@ -206,18 +215,7 @@ document.getElementById('recenter')?.addEventListener('click', () => {
 
 ## Demos for iOS and Android
 
-<table align="center">
-  <tr>
-    <th>iOS · Apple MapKit</th>
-    <th>Android · Google Maps</th>
-  </tr>
-  <tr>
-    <td><img src="assets/readme-demo-ios.webp" width="260" alt="Demo tour recorded on the iOS simulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
-    <td><img src="assets/readme-demo-android.webp" width="260" alt="Demo tour recorded on the Android emulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
-  </tr>
-</table>
-
-These recordings come from the [example app](./example-app)'s demo tour, running on a real iOS simulator and a real Android emulator. Build it with `VITE_DEMO_TOUR=1` to start the tour on launch, or tap **Demo tour** in the app (iOS and Android only).
+The videos at the top of this README play these demos. To run them yourself, build the [example app](./example-app) with `VITE_DEMO_TOUR=1` to start the tour on launch, or tap **Demo tour** in the app (iOS and Android only).
 
 The same TypeScript runs on both platforms. iOS draws it with **Apple MapKit** and Android draws it with the **Google Maps SDK**. Each demo shows whether it works on both platforms or only one.
 
