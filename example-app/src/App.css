@@ -96,3 +96,23 @@
 .error {
   color: #b00020;
 }
+
+.tour-card h1 {
+  font-size: 1.3rem;
+}
+
+.tour-card code {
+  font-size: 0.85rem;
+  color: #7dd3fc;
+}
+
+.tour-platform {
+  display: inline-block;
+  margin-bottom: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(14, 165, 233, 0.25);
+  color: #bae6fd;
+  font-size: 0.75rem;
+  font-weight: 600;
+}

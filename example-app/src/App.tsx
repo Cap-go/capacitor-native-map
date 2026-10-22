@@ -1,17 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { NativeMap } from '@capgo/capacitor-native-map';
+import { playTour, type TourStep } from './tour';
 import './App.css';
 
 const DEFAULT_CENTER = { lat: 37.7749, lng: -122.4194 };
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
 
-type DemoMode = 'embedded' | 'overlay';
+type DemoMode = 'embedded' | 'overlay' | 'tour';
+
+// The tour drives the native overlay map, so it only runs on iOS and Android.
+const TOUR_SUPPORTED = Capacitor.isNativePlatform();
+// Start straight into the demo tour (used to record the README videos).
+const AUTO_TOUR = TOUR_SUPPORTED && import.meta.env.VITE_DEMO_TOUR === '1';
+const PLATFORM_LABELS: Record<string, string> = {
+  ios: 'iOS · Apple MapKit',
+  android: 'Android · Google Maps',
+  web: 'Web · Google Maps JS',
+};
+const PLATFORM_LABEL = PLATFORM_LABELS[Capacitor.getPlatform()] ?? Capacitor.getPlatform();
 
 const App = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const nativeMapRef = useRef<NativeMap | null>(null);
-  const [mode, setMode] = useState<DemoMode>(Capacitor.isNativePlatform() ? 'overlay' : 'embedded');
+  const [mode, setMode] = useState<DemoMode>(
+    AUTO_TOUR ? 'tour' : Capacitor.isNativePlatform() ? 'overlay' : 'embedded',
+  );
+  const [tourStep, setTourStep] = useState<{ step: TourStep; index: number } | null>(null);
   const [status, setStatus] = useState('Initializing map...');
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +47,7 @@ const App = () => {
         await nativeMapRef.current?.destroy().catch(() => undefined);
         nativeMapRef.current = null;
 
-        const overlay = mode === 'overlay' && Capacitor.isNativePlatform();
+        const overlay = (mode === 'overlay' || mode === 'tour') && Capacitor.isNativePlatform();
         const map = await NativeMap.create({
           id: overlay ? 'overlay-map' : 'demo-map',
           element: overlay ? document.body : mapRef.current!,
@@ -54,6 +69,14 @@ const App = () => {
         }
 
         nativeMapRef.current = map;
+        if (mode === 'tour') {
+          setStatus('');
+          setError(null);
+          while (!destroyed) {
+            await playTour(map, (step, index) => setTourStep({ step, index }), () => destroyed);
+          }
+          return;
+        }
         await map.addMarker({
           coordinate: DEFAULT_CENTER,
           title: 'Hello',
@@ -82,7 +105,7 @@ const App = () => {
   }, [mode]);
 
   return (
-    <main className={`app ${mode === 'overlay' ? 'app-overlay' : ''}`}>
+    <main className={`app ${mode !== 'embedded' ? 'app-overlay' : ''}`}>
       {mode === 'overlay' && (
         <div className="map-overlay-ui">
           <header className="overlay-bar" data-map-overlay>
@@ -96,6 +119,11 @@ const App = () => {
             <button type="button" onClick={() => setMode('embedded')}>
               Embedded demo
             </button>
+            {TOUR_SUPPORTED && (
+              <button type="button" onClick={() => setMode('tour')}>
+                Demo tour
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -109,6 +137,25 @@ const App = () => {
           </button>
           <div ref={mapRef} className="map-container" />
         </>
+      )}
+
+      {mode === 'tour' && (
+        <div className="map-overlay-ui">
+          <header className="overlay-bar tour-card" data-map-overlay>
+            <span className="tour-platform">{PLATFORM_LABEL}</span>
+            <h1>{tourStep ? `${tourStep.index + 1}. ${tourStep.step.title}` : 'Demo tour'}</h1>
+            <p>
+              <code>{tourStep?.step.detail ?? 'Loading map…'}</code>
+            </p>
+          </header>
+          {!AUTO_TOUR && (
+            <div className="overlay-actions" data-map-overlay>
+              <button type="button" onClick={() => setMode('overlay')}>
+                Stop tour
+              </button>
+            </div>
+          )}
+        </div>
       )}
 
       <p className="status-message">{status}</p>
