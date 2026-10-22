@@ -204,6 +204,495 @@ document.getElementById('recenter')?.addEventListener('click', () => {
 });
 ```
 
+## Demos for iOS and Android
+
+<p align="center">
+  <img src="assets/readme-screenshot-ios.webp" width="240" alt="Example app on iOS (Apple MapKit)" />
+  &nbsp;&nbsp;
+  <img src="assets/readme-screenshot-android.webp" width="240" alt="Example app on Android (Google Maps)" />
+</p>
+
+The same TypeScript runs on both platforms. iOS draws it with **Apple MapKit** and Android draws it with the **Google Maps SDK**. Each demo shows whether it works on both platforms or only one.
+
+| Demo | iOS | Android |
+| --- | :---: | :---: |
+| [Store locator with tinted markers](#1-store-locator-with-tinted-markers) | ✅ | ✅ |
+| [Delivery route with polylines](#2-delivery-route-with-polylines) | ✅ | ✅ (+ `styleSpans`) |
+| [Delivery zones with circles and polygons](#3-delivery-zones-with-circles-and-polygons) | ✅ | ✅ |
+| [Clustering thousands of points](#4-clustering-thousands-of-points) | ✅ | ✅ |
+| [Drag-a-pin location picker](#5-drag-a-pin-location-picker) | ✅ | ✅ |
+| [Show the user's location](#6-show-the-users-location) | ✅ | ✅ |
+| [3D camera fly-to tour](#7-3d-camera-fly-to-tour) | ✅ | ✅ |
+| [Map type switcher](#8-map-type-switcher) | ✅ (Normal, Satellite, Hybrid) | ✅ (all types) |
+| [Load data for the visible area](#9-load-data-for-the-visible-area) | ✅ | ✅ |
+| [Traffic layer and zoom limits](#10-traffic-layer-and-zoom-limits) | ✅ | ✅ |
+| [Night mode style and tile overlays](#11-android-only-night-mode-style-and-tile-overlays) | ➖ | ✅ |
+| [Static thumbnails in a list (lite mode)](#12-android-only-static-thumbnails-in-a-list-lite-mode) | ➖ | ✅ |
+| [Platform-aware feature detection](#13-platform-aware-feature-detection) | ✅ | ✅ |
+
+The snippets below assume an embedded map container such as `<div id="map" style="width: 100%; height: 400px"></div>`. On iOS the `apiKey` is ignored, so you can pass the same options on both platforms.
+
+### 1. Store locator with tinted markers
+
+Add several stores in one call, give each brand its own pin color, then fit the camera to show all of them.
+
+```ts
+import { NativeMap, LatLngBounds } from '@capgo/capacitor-native-map';
+
+const stores = [
+  { name: 'Downtown', lat: 37.7897, lng: -122.4011, open: true },
+  { name: 'Mission', lat: 37.7599, lng: -122.4148, open: true },
+  { name: 'Sunset', lat: 37.7531, lng: -122.4945, open: false },
+];
+
+const map = await NativeMap.create({
+  id: 'store-locator',
+  element: document.getElementById('map')!,
+  apiKey: GOOGLE_KEY,
+  config: { center: { lat: 37.7749, lng: -122.4194 }, zoom: 12 },
+});
+
+const markerIds = await map.addMarkers(
+  stores.map((store) => ({
+    coordinate: { lat: store.lat, lng: store.lng },
+    title: store.name,
+    snippet: store.open ? 'Open now' : 'Closed',
+    // tintColor recolors the default pin on iOS and Android (0-255 per channel).
+    tintColor: store.open ? { r: 16, g: 185, b: 129, a: 255 } : { r: 148, g: 163, b: 184, a: 255 },
+  })),
+);
+
+// Fit every store on screen, with 64px of padding.
+const lats = stores.map((s) => s.lat);
+const lngs = stores.map((s) => s.lng);
+await map.fitBounds(
+  new LatLngBounds({
+    southwest: { lat: Math.min(...lats), lng: Math.min(...lngs) },
+    northeast: { lat: Math.max(...lats), lng: Math.max(...lngs) },
+    center: { lat: (Math.min(...lats) + Math.max(...lats)) / 2, lng: (Math.min(...lngs) + Math.max(...lngs)) / 2 },
+  }),
+  64,
+);
+
+await map.setOnMarkerClickListener((marker) => {
+  const index = markerIds.indexOf(marker.markerId);
+  openBottomSheet(stores[index]); // your own UI
+});
+```
+
+To use your own pin image, set `iconUrl` (PNG, relative to the web app's public folder or an `https` URL), plus `iconSize` and `iconAnchor`. SVG icons do not work on iOS or Android.
+
+```ts
+await map.addMarker({
+  coordinate: { lat: 37.7897, lng: -122.4011 },
+  iconUrl: 'assets/pins/coffee.png',
+  iconSize: { width: 36, height: 48 },
+  iconAnchor: { x: 0.5, y: 1 }, // fractions of the icon size: bottom-center touches the coordinate
+});
+```
+
+### 2. Delivery route with polylines
+
+Draw the planned route, then draw the part the driver has already covered on top of it.
+
+```ts
+const route = [
+  { lat: 48.8584, lng: 2.2945 }, // Eiffel Tower
+  { lat: 48.8606, lng: 2.3376 }, // Louvre
+  { lat: 48.853, lng: 2.3499 }, // Notre-Dame
+  { lat: 48.8867, lng: 2.3431 }, // Sacré-Cœur
+];
+
+// clickable: true is required for polyline taps on Android.
+let [plannedId, doneId] = await map.addPolylines([
+  { path: route, strokeColor: '#94a3b8', strokeWeight: 6, clickable: true },
+  { path: route.slice(0, 2), strokeColor: '#2563eb', strokeWeight: 6, clickable: true },
+]);
+
+// Use the returned IDs to know which line was tapped (iOS does not send `tag` back).
+await map.setOnPolylineClickListener(({ polylineId }) => {
+  console.log(polylineId === doneId ? 'tapped the covered part' : 'tapped the planned route');
+});
+
+// Later, when the driver moves on:
+await map.removePolylines([doneId]);
+[doneId] = await map.addPolylines([
+  { path: route.slice(0, 3), strokeColor: '#2563eb', strokeWeight: 6, clickable: true },
+]);
+```
+
+On **Android** one polyline can have a different color for each segment, using `styleSpans`:
+
+```ts
+await map.addPolylines([
+  {
+    path: route,
+    strokeWeight: 8,
+    styleSpans: [
+      { color: '#22c55e', segments: 1 }, // traffic is fine
+      { color: '#f97316', segments: 1 }, // slow
+      { color: '#ef4444', segments: 1 }, // jammed
+    ],
+  },
+]);
+```
+
+For flight paths across long distances, set `geodesic: true`. The line then follows the curve of the Earth, on both iOS and Android.
+
+```ts
+await map.addPolylines([
+  {
+    path: [
+      { lat: 40.6413, lng: -73.7781 }, // JFK
+      { lat: 51.47, lng: -0.4543 }, // LHR
+    ],
+    geodesic: true,
+    strokeColor: '#a855f7',
+    strokeWeight: 3,
+  },
+]);
+```
+
+### 3. Delivery zones with circles and polygons
+
+Show a delivery radius around a shop and a neighborhood zone. Keep the IDs returned by `addCircles` and `addPolygons` to know which shape the user tapped. Click events carry `tag` on Android only, so IDs are the way that works on both platforms.
+
+```ts
+const [freeDeliveryId] = await map.addCircles([
+  {
+    center: { lat: 40.7128, lng: -74.006 },
+    radius: 1500, // meters
+    fillColor: '#3b82f6',
+    fillOpacity: 0.15,
+    strokeColor: '#2563eb',
+    strokeWeight: 2,
+    clickable: true,
+  },
+]);
+
+const [eastVillageId] = await map.addPolygons([
+  {
+    paths: [
+      { lat: 40.7306, lng: -73.9866 },
+      { lat: 40.7378, lng: -73.9772 },
+      { lat: 40.7285, lng: -73.9712 },
+      { lat: 40.7224, lng: -73.9815 },
+    ],
+    fillColor: '#f59e0b',
+    fillOpacity: 0.25,
+    strokeColor: '#d97706',
+    strokeWeight: 2,
+    clickable: true,
+  },
+]);
+
+const zoneNames: Record<string, string> = {
+  [freeDeliveryId]: 'Free delivery',
+  [eastVillageId]: 'East Village',
+};
+
+await map.setOnCircleClickListener(({ circleId }) => showToast(`Zone: ${zoneNames[circleId]}`));
+await map.setOnPolygonClickListener(({ polygonId }) => showToast(`Zone: ${zoneNames[polygonId]}`));
+```
+
+### 4. Clustering thousands of points
+
+Turn on clustering before you add a large set of markers. Nearby pins merge into one bubble (MapKit clustering on iOS, the Google Maps utility clusterer on Android).
+
+```ts
+await map.enableClustering(3); // group 3 or more nearby markers
+
+const points = Array.from({ length: 2000 }, (_, i) => ({
+  coordinate: {
+    lat: 37.7749 + (Math.random() - 0.5) * 0.3,
+    lng: -122.4194 + (Math.random() - 0.5) * 0.3,
+  },
+  title: `Scooter #${i + 1}`,
+}));
+await map.addMarkers(points);
+
+await map.setOnClusterClickListener(({ size, latitude, longitude }) => {
+  console.log(`${size} scooters near`, latitude, longitude);
+  // Zoom in on the cluster.
+  map.setCamera({ coordinate: { lat: latitude, lng: longitude }, zoom: 15, animate: true });
+});
+
+// Turn clustering off again later:
+await map.disableClustering();
+```
+
+### 5. Drag-a-pin location picker
+
+A "set delivery address" screen: the user drags a pin, and you read the final coordinate. You can also drop the pin where the user taps.
+
+```ts
+let pinId = await map.addMarker({
+  coordinate: { lat: 51.5074, lng: -0.1278 },
+  title: 'Deliver here',
+  draggable: true, // on iOS: long-press the pin, then drag it
+});
+
+await map.setOnMarkerDragStartListener(() => hapticLight());
+await map.setOnMarkerDragEndListener(({ latitude, longitude }) => {
+  saveAddressCoordinate({ lat: latitude, lng: longitude });
+});
+
+// Move the pin to wherever the user taps. Taps are queued so quick double taps
+// never leave two pins on the map.
+let pinUpdate = Promise.resolve();
+await map.setOnMapClickListener(({ latitude, longitude }) => {
+  pinUpdate = pinUpdate
+    .then(async () => {
+      await map.removeMarker(pinId);
+      pinId = await map.addMarker({
+        coordinate: { lat: latitude, lng: longitude },
+        title: 'Deliver here',
+        draggable: true,
+      });
+      saveAddressCoordinate({ lat: latitude, lng: longitude });
+    })
+    .catch((error) => console.error('could not move the pin', error)); // keep the queue alive
+});
+```
+
+### 6. Show the user's location
+
+Show the blue "you are here" dot. The plugin asks for location permission when you call `enableCurrentLocation(true)`.
+
+**iOS**: add the usage string to `ios/App/App/Info.plist`:
+
+```xml
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We show your position on the map to find stores near you.</string>
+```
+
+**Android**: add the permissions to `android/app/src/main/AndroidManifest.xml`:
+
+```xml
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+```
+
+```ts
+try {
+  await map.enableCurrentLocation(true);
+} catch {
+  showToast('Location permission denied');
+}
+
+// Android: Google Maps shows a "my location" button.
+await map.setOnMyLocationButtonClickListener(() => console.log('recentering on the user'));
+
+// Both: the user tapped their own location dot.
+await map.setOnMyLocationClickListener(({ latitude, longitude }) => {
+  console.log('you are at', latitude, longitude);
+});
+```
+
+### 7. 3D camera fly-to tour
+
+Tilt the camera to 45°, rotate it, and move from one landmark to the next. On iOS, MapKit shows 3D buildings in cities that support them.
+
+```ts
+const tour = [
+  { name: 'Golden Gate', coordinate: { lat: 37.8199, lng: -122.4783 }, bearing: 30 },
+  { name: 'Alcatraz', coordinate: { lat: 37.8267, lng: -122.423 }, bearing: 120 },
+  { name: 'Salesforce Tower', coordinate: { lat: 37.7897, lng: -122.3972 }, bearing: 220 },
+];
+
+for (const stop of tour) {
+  await map.setCamera({
+    coordinate: stop.coordinate,
+    zoom: 16,
+    angle: 45, // tilt: 0 or 45
+    bearing: stop.bearing, // degrees clockwise from north
+    animate: true,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 3000));
+}
+
+// Go back to a flat, north-up view.
+await map.setCamera({ angle: 0, bearing: 0, animate: true });
+```
+
+### 8. Map type switcher
+
+```ts
+import { Capacitor } from '@capacitor/core';
+import { MapType } from '@capgo/capacitor-native-map';
+
+// MapKit has no terrain map and no "None" map type, so only show these options on Android.
+const types =
+  Capacitor.getPlatform() === 'android'
+    ? [MapType.Normal, MapType.Satellite, MapType.Hybrid, MapType.Terrain, MapType.None]
+    : [MapType.Normal, MapType.Satellite, MapType.Hybrid];
+
+let current = 0;
+document.getElementById('layers')!.addEventListener('click', async () => {
+  current = (current + 1) % types.length;
+  await map.setMapType(types[current]);
+  console.log('map type is now', await map.getMapType());
+});
+```
+
+### 9. Load data for the visible area
+
+Fetch only the points that are on screen. Wait until the user stops moving the map, then use the camera bounds to query your API.
+
+```ts
+let visibleIds: string[] = [];
+let latestRequest = 0;
+
+await map.setOnCameraMoveStartedListener(({ isGesture }) => {
+  if (isGesture) hideSearchThisAreaButton();
+});
+
+await map.setOnCameraIdleListener(async ({ bounds, zoom }) => {
+  const requestId = ++latestRequest;
+  if (zoom < 11) {
+    // Too far out: clear the old markers and skip the query.
+    if (visibleIds.length) await map.removeMarkers(visibleIds);
+    visibleIds = [];
+    return;
+  }
+  const { southwest, northeast } = bounds;
+  const places = await fetch(
+    `/api/places?sw=${southwest.lat},${southwest.lng}&ne=${northeast.lat},${northeast.lng}`,
+  ).then((r) => r.json());
+
+  // The user moved again while this request was loading: drop the stale result.
+  if (requestId !== latestRequest) return;
+
+  if (visibleIds.length) await map.removeMarkers(visibleIds);
+  visibleIds = await map.addMarkers(
+    places.map((p: { lat: number; lng: number; name: string }) => ({
+      coordinate: { lat: p.lat, lng: p.lng },
+      title: p.name,
+    })),
+  );
+});
+
+// Check one coordinate against the current viewport:
+const bounds = await map.getMapBounds();
+const isVisible = await bounds.contains({ lat: 37.7749, lng: -122.4194 });
+```
+
+### 10. Traffic layer and zoom limits
+
+Turn on live traffic, keep the zoom inside a set range, and leave room for your own HTML header and bottom sheet with `setPadding`. The map's logo and controls move inside the padding.
+
+```ts
+const map = await NativeMap.create({
+  id: 'fleet-map',
+  element: document.getElementById('map')!,
+  apiKey: GOOGLE_KEY,
+  config: {
+    center: { lat: 34.0522, lng: -118.2437 },
+    zoom: 12,
+    minZoom: 9, // can't zoom out past the metro area
+    maxZoom: 18,
+  },
+});
+
+await map.enableTrafficLayer(true);
+await map.setPadding({ top: 80, left: 0, right: 0, bottom: 240 });
+```
+
+### 11. Android only: night mode style and tile overlays
+
+Google Maps on Android accepts [JSON map styles](https://mapstyle.withgoogle.com/) through `config.styles`, or a cloud style through `config.androidMapId`. MapKit on iOS follows the system light and dark mode by itself.
+
+```ts
+const nightStyle = [
+  { elementType: 'geometry', stylers: [{ color: '#242f3e' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#746855' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#242f3e' }] },
+  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#38414e' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#17263c' }] },
+];
+
+const map = await NativeMap.create({
+  id: 'night-map',
+  element: document.getElementById('map')!,
+  apiKey: GOOGLE_KEY,
+  config: {
+    center: { lat: 52.52, lng: 13.405 },
+    zoom: 12,
+    styles: nightStyle, // Android + web
+    // androidMapId: 'YOUR_CLOUD_MAP_ID', // or a style made in Google Cloud
+  },
+});
+```
+
+Tile overlays draw your own raster tiles (weather radar, heatmaps, historic maps) on top of the base map. Android and web support them. On iOS the call fails with `UNAVAILABLE`.
+
+```ts
+const overlayId = await map.addTileOverlay({
+  url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  opacity: 0.6,
+  zIndex: 1,
+});
+
+await map.removeTileOverlay(overlayId);
+```
+
+### 12. Android only: static thumbnails in a list (lite mode)
+
+When a list shows many small maps (order history, saved places), use `androidLiteMode`. Each map then renders as a light bitmap instead of a full interactive map. iOS ignores this option.
+
+```ts
+for (const order of orders) {
+  await NativeMap.create({
+    id: `order-${order.id}`,
+    element: document.getElementById(`order-map-${order.id}`)!,
+    apiKey: GOOGLE_KEY,
+    config: {
+      center: order.dropoff,
+      zoom: 15,
+      androidLiteMode: true,
+    },
+  });
+}
+```
+
+### 13. Platform-aware feature detection
+
+Keep one code path, and only turn on the extras where the platform supports them.
+
+```ts
+import { Capacitor } from '@capacitor/core';
+
+const platform = Capacitor.getPlatform(); // 'ios' | 'android' | 'web'
+
+if (platform === 'android' || platform === 'web') {
+  await map.addTileOverlay({ url: 'https://tiles.example.com/radar/{z}/{x}/{y}.png', opacity: 0.5 });
+}
+
+if (platform === 'android') {
+  await map.enableIndoorMaps(true); // Google indoor floor plans
+  await map.setMapType(MapType.Terrain);
+}
+
+// These work on every platform:
+await map.enableTrafficLayer(true);
+await map.enableClustering();
+```
+
+| Capability | iOS (MapKit) | Android (Google Maps) |
+| --- | --- | --- |
+| API key | Not needed | `GOOGLE_MAPS_API_KEY` |
+| Markers, clustering, drag | ✅ | ✅ |
+| Polylines, polygons, circles | ✅ | ✅ |
+| Polyline `styleSpans` | ➖ (uses `strokeColor`) | ✅ |
+| `tag` in shape click events | ➖ (use returned IDs) | ✅ |
+| Map types | Normal, Satellite, Hybrid | Normal, Satellite, Hybrid, Terrain, None |
+| Traffic layer | ✅ | ✅ |
+| Indoor maps | ➖ (no-op) | ✅ |
+| Tile overlays | ➖ (rejects with `UNAVAILABLE`) | ✅ |
+| JSON `styles` / map ID | ➖ (follows system dark mode) | ✅ `styles` / `androidMapId` |
+| Lite mode | ➖ | ✅ `androidLiteMode` |
+| My-location button event | ➖ | ✅ |
+
 ## Example app
 
 ```bash
