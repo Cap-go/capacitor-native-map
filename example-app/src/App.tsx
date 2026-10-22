@@ -9,9 +9,16 @@ const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
 
 type DemoMode = 'embedded' | 'overlay' | 'tour';
 
+// The tour drives the native overlay map, so it only runs on iOS and Android.
+const TOUR_SUPPORTED = Capacitor.isNativePlatform();
 // Start straight into the demo tour (used to record the README videos).
-const AUTO_TOUR = import.meta.env.VITE_DEMO_TOUR === '1';
-const PLATFORM_LABEL = Capacitor.getPlatform() === 'ios' ? 'iOS · Apple MapKit' : 'Android · Google Maps';
+const AUTO_TOUR = TOUR_SUPPORTED && import.meta.env.VITE_DEMO_TOUR === '1';
+const PLATFORM_LABELS: Record<string, string> = {
+  ios: 'iOS · Apple MapKit',
+  android: 'Android · Google Maps',
+  web: 'Web · Google Maps JS',
+};
+const PLATFORM_LABEL = PLATFORM_LABELS[Capacitor.getPlatform()] ?? Capacitor.getPlatform();
 
 const App = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -112,9 +119,11 @@ const App = () => {
             <button type="button" onClick={() => setMode('embedded')}>
               Embedded demo
             </button>
-            <button type="button" onClick={() => setMode('tour')}>
-              Demo tour
-            </button>
+            {TOUR_SUPPORTED && (
+              <button type="button" onClick={() => setMode('tour')}>
+                Demo tour
+              </button>
+            )}
           </div>
         </div>
       )}

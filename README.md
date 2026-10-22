@@ -217,7 +217,7 @@ document.getElementById('recenter')?.addEventListener('click', () => {
   </tr>
 </table>
 
-These recordings come from the [example app](./example-app)'s demo tour, running on a real iOS simulator and a real Android emulator. Build it with `VITE_DEMO_TOUR=1` to start the tour on launch, or tap **Demo tour** in the app.
+These recordings come from the [example app](./example-app)'s demo tour, running on a real iOS simulator and a real Android emulator. Build it with `VITE_DEMO_TOUR=1` to start the tour on launch, or tap **Demo tour** in the app (iOS and Android only).
 
 The same TypeScript runs on both platforms. iOS draws it with **Apple MapKit** and Android draws it with the **Google Maps SDK**. Each demo shows whether it works on both platforms or only one.
 
@@ -267,7 +267,7 @@ const markerIds = await map.addMarkers(
     title: store.name,
     snippet: store.open ? 'Open now' : 'Closed',
     // tintColor recolors the default pin (0-255 per channel). Android keeps only the hue,
-    // so use saturated colors: a grey tint turns into its hue (for example blue).
+    // so use saturated colors: a neutral grey becomes red (hue 0), a bluish grey becomes blue.
     tintColor: store.open ? { r: 16, g: 185, b: 129, a: 255 } : { r: 239, g: 68, b: 68, a: 255 },
   })),
 );
@@ -693,7 +693,7 @@ await map.enableClustering();
 | --- | --- | --- |
 | API key | Not needed | `GOOGLE_MAPS_API_KEY` |
 | Markers, clustering, drag | ✅ | ✅ |
-| Marker `tintColor` | Full color | Hue only (greys become their hue) |
+| Marker `tintColor` | Full color | Hue only (a neutral grey becomes red) |
 | Polylines, polygons, circles | ✅ | ✅ |
 | Polyline `styleSpans` | ➖ (uses `strokeColor`) | ✅ |
 | `tag` in shape click events | ➖ (use returned IDs) | ✅ |
