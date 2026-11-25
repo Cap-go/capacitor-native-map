@@ -167,7 +167,16 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
                     self.maps.removeValue(forKey: id)?.destroy()
                 }
                 let toBack = call.getBool("toBack", false)
-                self.maps[id] = Map(id: id, config: config, delegate: self, toBack: toBack)
+                let webViewNativeUIEngine = call.getBool("webViewNativeUIEngine", false)
+                let projectionSelector = call.getString("projectionSelector")
+                self.maps[id] = Map(
+                    id: id,
+                    config: config,
+                    delegate: self,
+                    toBack: toBack,
+                    webViewNativeUIEngine: webViewNativeUIEngine,
+                    projectionSelector: projectionSelector
+                )
                 self.mapsLock.unlock()
             }
             if alreadyExists {

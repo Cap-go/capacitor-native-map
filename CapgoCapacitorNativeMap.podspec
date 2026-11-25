@@ -13,4 +13,5 @@ Pod::Spec.new do |s|
   s.source_files = 'ios/Sources/**/*.{swift,h,m,c,cc,mm,cpp}'
   s.ios.deployment_target = '15.0'
   s.dependency 'Capacitor'
+  s.dependency 'WebViewNativeUIEngine', '1.0.11'
 end

@@ -1,0 +1,19 @@
+appId: app.capgo.nativemap
+name: Engine enabled embedded map
+---
+- launchApp
+- tapOn:
+    text: "Embedded demo"
+    optional: true
+- assertVisible:
+    id: "engine-toggle"
+- tapOn:
+    id: "engine-toggle"
+- extendedWaitUntil:
+    visible:
+      id: "map-status"
+    timeout: 30000
+- copyTextFrom:
+    id: "map-status"
+- assertTrue: ${!maestro.copiedText.includes('Failed')}
+- assertTrue: ${maestro.copiedText.length > 0}

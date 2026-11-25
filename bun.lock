@@ -8,6 +8,7 @@
         "@googlemaps/js-api-loader": "^2.0.2",
         "@googlemaps/markerclusterer": "^2.6.2",
         "@types/google.maps": "^3.58.1",
+        "@webview-native-ui/engine": "1.0.11",
       },
       "devDependencies": {
         "@capacitor/android": "^8.0.0",
@@ -104,6 +105,8 @@
     "@nodelib/fs.stat": ["@nodelib/fs.stat@2.0.5", "", {}, "sha512-RkhPPp2zrqDAQA/2jNhnztcPAlv64XdhIp7a7454A5ovI7Bukxgt7MX7udwAu3zg1DcpPU0rz3VV1SeaqvY4+A=="],
 
     "@nodelib/fs.walk": ["@nodelib/fs.walk@1.2.8", "", { "dependencies": { "@nodelib/fs.scandir": "2.1.5", "fastq": "^1.6.0" } }, "sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg=="],
+
+    "@rdlabo/ionic-theme-utils": ["@rdlabo/ionic-theme-utils@0.1.5", "", { "peerDependencies": { "@ionic/core": ">=8.8.1 <10" }, "optionalPeers": ["@ionic/core"], "bin": { "rdlabo-check-esm": "scripts/check-esm.mjs", "rdlabo-build-theme": "scripts/build-theme.mjs", "rdlabo-copy-structured-list": "scripts/copy-structured-list.mjs" } }, "sha512-LTf+GQ3S786xF1R6ITs9PtfDfSZxPcWJqzIzk046X9dvwgS+9+cCmdA5ENXYbo2Xbdv4KnxS/LKvm4fPL9THGQ=="],
 
     "@rollup/plugin-node-resolve": ["@rollup/plugin-node-resolve@16.0.3", "", { "dependencies": { "@rollup/pluginutils": "^5.0.1", "@types/resolve": "1.20.2", "deepmerge": "^4.2.2", "is-module": "^1.0.0", "resolve": "^1.22.1" }, "peerDependencies": { "rollup": "^2.78.0||^3.0.0||^4.0.0" }, "optionalPeers": ["rollup"] }, "sha512-lUYM3UBGuM93CnMPG1YocWu7X802BrNF3jW2zny5gQyLQgRFJhV1Sq0Zi74+dh/6NBx1DxFC4b4GXg9wUCG5Qg=="],
 
@@ -206,6 +209,8 @@
     "@typescript-eslint/visitor-keys": ["@typescript-eslint/visitor-keys@5.62.0", "", { "dependencies": { "@typescript-eslint/types": "5.62.0", "eslint-visitor-keys": "^3.3.0" } }, "sha512-07ny+LHRzQXepkGg6w0mFY41fVUNBrL2Roj/++7V1txKugfjm/Ci/qSND03r2RhlJhJYMcTn9AhhSSqQp0Ysyw=="],
 
     "@ungap/structured-clone": ["@ungap/structured-clone@1.4.0", "", {}, "sha512-1mEZtMKPM09vDmQt5y7YvmN2+DFTP7Tg0EWXdic8/C6VRnpb33e4ghisCIE3WZjsE2N8mf+QV1Zqh7ZFYLWInQ=="],
+
+    "@webview-native-ui/engine": ["@webview-native-ui/engine@1.0.11", "", { "dependencies": { "@rdlabo/ionic-theme-utils": "0.1.5" }, "peerDependencies": { "@capacitor/core": ">=8.0.0 <9", "@ionic/core": ">=8.8.1 <10" }, "optionalPeers": ["@capacitor/core", "@ionic/core"] }, "sha512-+gSA43PpzOflopNNpR0jyDYvnw39eMcy77vhziWOug6nLpEwj14WZschM8c6k4OUNT9iJpUxRpDsrYBV6HMQJg=="],
 
     "@xmldom/xmldom": ["@xmldom/xmldom@0.9.12", "", {}, "sha512-5AXjrcMClTryPe9LgZrygpB1lj7s0S9E0+W+AHaVKAVyHanafK86iPSvG5xHVSp/jC+VH1UXu0TAEmY279xH7A=="],
 

@@ -160,8 +160,12 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             }
 
             val toBack = call.getBoolean("toBack", false)!!
+            val webViewNativeUIEngine = call.getBoolean("webViewNativeUIEngine", false)!!
+            val projectionSelector = call.getString("projectionSelector")
             val newMap = CapacitorNativeMapView(id, config, this)
             newMap.toBack = toBack
+            newMap.webViewNativeUIEngine = webViewNativeUIEngine
+            newMap.projectionSelector = projectionSelector
             maps[id] = newMap
 
             call.resolve()

@@ -22,6 +22,11 @@ import type {
   TileOverlay,
 } from './definitions';
 import { LatLngBounds, MapType } from './definitions';
+import {
+  ensureEngineProjectionSlot,
+  removeEngineProjectionSlot,
+  syncEngineProjectionSlotLayout,
+} from './engine-projection';
 import type { CreateMapArgs } from './implementation';
 import { CapacitorNativeMap } from './implementation';
 import { MapReadyQueue } from './map-ready';
@@ -129,6 +134,7 @@ export class NativeMap {
   private id: string;
   private element: HTMLElement | null = null;
   private toBack = false;
+  private webViewNativeUIEngine = false;
   private toBackLayout?: { x: number; y: number; width: number; height: number };
   private windowResizeHandler?: () => void;
   private resizeObserver: ResizeObserver | null = null;
@@ -188,7 +194,9 @@ export class NativeMap {
     const newMap = new NativeMap(options.id);
 
     const toBack = options.toBack === true;
+    const webViewNativeUIEngine = options.webViewNativeUIEngine === true;
     newMap.toBack = toBack;
+    newMap.webViewNativeUIEngine = webViewNativeUIEngine;
 
     if (!toBack && !options.element) {
       throw new Error('element is required when toBack is false');
@@ -199,14 +207,30 @@ export class NativeMap {
       throw new Error('container element is required');
     }
 
+    const restCreate: CreateMapArgs = { ...options };
+    delete restCreate.webViewNativeUIEngine;
+    delete restCreate.projectionSelector;
     const createOptions: CreateMapArgs = {
-      ...options,
+      ...restCreate,
       toBack,
       config: {
         ...options.config,
         androidLiteMode: options.config.androidLiteMode ?? false,
       },
     };
+
+    if (webViewNativeUIEngine && Capacitor.isNativePlatform()) {
+      createOptions.webViewNativeUIEngine = true;
+      const layoutForSlot = toBack
+        ? {
+            x: options.config.x ?? 0,
+            y: options.config.y ?? 0,
+            width: options.config.width ?? window.innerWidth,
+            height: options.config.height ?? window.innerHeight,
+          }
+        : undefined;
+      createOptions.projectionSelector = ensureEngineProjectionSlot(hostElement, options.id, toBack, layoutForSlot);
+    }
 
     newMap.element = hostElement;
     if (!toBack) {
@@ -333,6 +357,9 @@ export class NativeMap {
         NativeMap.releaseToBackDocumentClasses();
         newMap.toBackLayout = undefined;
       }
+      if (webViewNativeUIEngine) {
+        removeEngineProjectionSlot(options.id);
+      }
     };
 
     try {
@@ -388,6 +415,10 @@ export class NativeMap {
       NativeMap.releaseToBackDocumentClasses();
       this.toBackLayout = undefined;
       this.toBack = false;
+    }
+    if (this.webViewNativeUIEngine) {
+      removeEngineProjectionSlot(this.id);
+      this.webViewNativeUIEngine = false;
     }
 
     this.removeAllMapListeners();
@@ -472,6 +503,9 @@ export class NativeMap {
           width: layout.width ?? this.toBackLayout.width,
           height: layout.height ?? this.toBackLayout.height,
         };
+        if (this.webViewNativeUIEngine && this.toBackLayout) {
+          syncEngineProjectionSlotLayout(this.id, this.toBackLayout);
+        }
       }
       this.updateMapBounds();
     }
@@ -666,6 +700,10 @@ export class NativeMap {
     if (this.toBack) {
       NativeMap.releaseToBackDocumentClasses();
       this.toBackLayout = undefined;
+    }
+    if (this.webViewNativeUIEngine) {
+      removeEngineProjectionSlot(this.id);
+      this.webViewNativeUIEngine = false;
     }
 
     this.removeAllMapListeners();

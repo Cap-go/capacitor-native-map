@@ -65,7 +65,8 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@googlemaps/markerclusterer": "^2.6.2",
-    "@types/google.maps": "^3.58.1"
+    "@types/google.maps": "^3.58.1",
+    "@webview-native-ui/engine": "1.0.11"
   },
   "devDependencies": {
     "@capacitor/android": "^8.0.0",

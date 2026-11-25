@@ -1,0 +1,9 @@
+appId: app.capgo.nativemap
+name: Engine on does not mask missing API key on web build
+---
+- launchApp
+- assertVisible:
+    id: "map-status"
+- copyTextFrom:
+    id: "map-status"
+- assertTrue: ${maestro.copiedText.length > 0}

@@ -159,6 +159,26 @@ export interface StyleSpan {
 }
 
 /**
+ * Optional map creation flags documented for API consumers.
+ * The full create payload is {@link CreateMapArgs} in the implementation module;
+ * {@link NativeMap.create} accepts these options.
+ */
+export interface NativeMapCreateOptions {
+  /**
+   * Registers the native map with
+   * [@webview-native-ui/engine](https://github.com/webview-native-ui/engine) so the map
+   * scrolls with surrounding Web content and HTML can layer above the map when needed.
+   * Install `@webview-native-ui/engine@1.0.11` (or the version matching the plugin) in the app
+   * and add the native Engine dependency on iOS (SwiftPM/CocoaPods) and Android (Maven).
+   * Works with both embedded maps and `toBack` overlay mode. No effect on web.
+   *
+   * @default false
+   * @since 8.2.0
+   */
+  webViewNativeUIEngine?: boolean;
+}
+
+/**
  * For web, all the javascript Google Maps options are available as
  * NativeMapConfig extends google.maps.MapOptions.
  * For iOS and Android only the config options declared on NativeMapConfig are available.
