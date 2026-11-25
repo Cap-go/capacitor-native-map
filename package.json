@@ -65,8 +65,7 @@
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
     "@googlemaps/markerclusterer": "^2.6.2",
-    "@types/google.maps": "^3.58.1",
-    "@webview-native-ui/engine": "1.0.11"
+    "@types/google.maps": "^3.58.1"
   },
   "devDependencies": {
     "@capacitor/android": "^8.0.0",
@@ -93,7 +92,13 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@capacitor/core": ">=8.0.0"
+    "@capacitor/core": ">=8.0.0",
+    "@webview-native-ui/engine": "1.0.11"
+  },
+  "peerDependenciesMeta": {
+    "@webview-native-ui/engine": {
+      "optional": true
+    }
   },
   "prettier": "@ionic/prettier-config",
   "swiftlint": "@ionic/swiftlint-config",

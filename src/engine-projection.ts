@@ -9,7 +9,9 @@ export const NATIVE_MAP_ENGINE_EVENTS = {
 } as const;
 
 export function projectionSelectorForMap(mapId: string): string {
-  return `[${NATIVE_MAP_ENGINE_SLOT_ATTR}="${mapId}"]`;
+  const escaped =
+    typeof CSS !== 'undefined' && typeof CSS.escape === 'function' ? CSS.escape(mapId) : mapId.replace(/"/g, '\\"');
+  return `[${NATIVE_MAP_ENGINE_SLOT_ATTR}="${escaped}"]`;
 }
 
 /**

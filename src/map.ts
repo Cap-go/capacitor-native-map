@@ -207,6 +207,7 @@ export class NativeMap {
       throw new Error('container element is required');
     }
 
+    const manualProjectionSelector = options.projectionSelector;
     const restCreate: CreateMapArgs = { ...options };
     delete restCreate.webViewNativeUIEngine;
     delete restCreate.projectionSelector;
@@ -221,15 +222,24 @@ export class NativeMap {
 
     if (webViewNativeUIEngine && Capacitor.isNativePlatform()) {
       createOptions.webViewNativeUIEngine = true;
-      const layoutForSlot = toBack
-        ? {
-            x: options.config.x ?? 0,
-            y: options.config.y ?? 0,
-            width: options.config.width ?? window.innerWidth,
-            height: options.config.height ?? window.innerHeight,
-          }
-        : undefined;
-      createOptions.projectionSelector = ensureEngineProjectionSlot(hostElement, options.id, toBack, layoutForSlot);
+      if (manualProjectionSelector) {
+        createOptions.projectionSelector = manualProjectionSelector;
+      } else {
+        const layoutForSlot = toBack
+          ? {
+              x: options.config.x ?? 0,
+              y: options.config.y ?? 0,
+              width: options.config.width ?? window.innerWidth,
+              height: options.config.height ?? window.innerHeight,
+            }
+          : undefined;
+        createOptions.projectionSelector = ensureEngineProjectionSlot(
+          hostElement,
+          options.id,
+          toBack,
+          layoutForSlot,
+        );
+      }
     }
 
     newMap.element = hostElement;

@@ -348,6 +348,7 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
             webView: webView,
             pluginJsName: delegate?.jsName ?? "NativeMap",
             selector: selector,
+            mapVisible: isMapVisible,
             viewProvider: { [weak self] in self?.mapView }
         )
     }

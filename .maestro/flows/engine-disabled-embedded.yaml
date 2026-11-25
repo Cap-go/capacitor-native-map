@@ -3,23 +3,16 @@ name: Engine disabled embedded map
 ---
 - launchApp
 - tapOn:
-    id: "mode-switch"
-    optional: true
-- assertVisible:
-    text: "Embedded demo"
-    optional: true
-- tapOn:
     text: "Embedded demo"
     optional: true
 - assertVisible:
     id: "engine-toggle"
-- tapOn:
+- assertNotChecked:
     id: "engine-toggle"
-    repeat: 2
-    delay: 300
-- assertVisible:
-    id: "map-status"
+- extendedWaitUntil:
+    visible:
+      text: "Map ready"
+    timeout: 60000
 - copyTextFrom:
     id: "map-status"
-- assertTrue: ${!maestro.copiedText.includes('Failed')}
-- assertTrue: ${maestro.copiedText.length > 0}
+- assertTrue: ${maestro.copiedText.includes('Map ready')}

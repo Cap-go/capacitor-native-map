@@ -85,6 +85,7 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
       webViewNativeUIEngine: true,
     });
     await waitForNativeCreate();
+    const slotBefore = document.querySelector('[data-native-map-engine-slot="force-engine"]');
 
     const second = await NativeMap.create({
       id: 'force-engine',
@@ -96,9 +97,10 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
     });
     await waitForNativeCreate();
 
-    expect(document.querySelector('[data-native-map-engine-slot="force-engine"]')).not.toBeNull();
+    const slotAfter = document.querySelector('[data-native-map-engine-slot="force-engine"]');
+    expect(slotAfter).toBe(slotBefore);
     const args = createImpl.mock.calls[createImpl.mock.calls.length - 1]?.[0] as Record<string, unknown>;
-    expect(args.projectionSelector).toBeTruthy();
+    expect(args.projectionSelector).toBe('[data-native-map-engine-slot="force-engine"]');
     await second.destroy();
     await first.destroy().catch(() => undefined);
   });
@@ -115,7 +117,7 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
     await waitForNativeCreate();
     const args = createImpl.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(args.webViewNativeUIEngine).toBe(true);
-    expect(typeof args.projectionSelector).toBe('string');
+    expect(args.projectionSelector).toBe('[data-native-map-engine-slot="engine-map"]');
     expect(document.querySelector('[data-native-map-engine-slot="engine-map"]')).not.toBeNull();
   });
 });

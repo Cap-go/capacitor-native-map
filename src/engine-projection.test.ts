@@ -41,6 +41,8 @@ describe('engine projection DOM', () => {
     ensureEngineProjectionSlot(document.body, 'lay-1', true, { x: 0, y: 0, width: 10, height: 10 });
     syncEngineProjectionSlotLayout('lay-1', { x: 5, y: 6, width: 50, height: 60 });
     const slot = document.querySelector(projectionSelectorForMap('lay-1')) as HTMLElement;
+    expect(slot.style.left).toBe('5px');
+    expect(slot.style.top).toBe('6px');
     expect(slot.style.width).toBe('50px');
     expect(slot.style.height).toBe('60px');
   });

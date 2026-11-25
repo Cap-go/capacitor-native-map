@@ -11,7 +11,8 @@ type DemoMode = 'embedded' | 'overlay' | 'tour';
 
 const ENGINE_DEFAULT =
   import.meta.env.VITE_WEBVIEW_NATIVE_UI_ENGINE === '1' ||
-  import.meta.env.VITE_WEBVIEW_NATIVE_UI_ENGINE === 'true';
+  import.meta.env.VITE_WEBVIEW_NATIVE_UI_ENGINE === 'true' ||
+  false;
 
 // The tour drives the native overlay map, so it only runs on iOS and Android.
 const TOUR_SUPPORTED = Capacitor.isNativePlatform();
@@ -32,8 +33,10 @@ const App = () => {
   );
   const [tourStep, setTourStep] = useState<{ step: TourStep; index: number } | null>(null);
   const [engineEnabled, setEngineEnabled] = useState(ENGINE_DEFAULT);
+  const [mapReady, setMapReady] = useState(false);
   const [status, setStatus] = useState('Initializing map...');
   const [error, setError] = useState<string | null>(null);
+  const engineActive = engineEnabled && Capacitor.isNativePlatform();
 
   useEffect(() => {
     let destroyed = false;
@@ -49,6 +52,7 @@ const App = () => {
       }
 
       try {
+        setMapReady(false);
         await nativeMapRef.current?.destroy().catch(() => undefined);
         nativeMapRef.current = null;
 
@@ -78,6 +82,7 @@ const App = () => {
         if (mode === 'tour') {
           setStatus('');
           setError(null);
+          setMapReady(true);
           while (!destroyed) {
             await playTour(map, (step, index) => setTourStep({ step, index }), () => destroyed);
           }
@@ -95,9 +100,11 @@ const App = () => {
         });
         setStatus(overlay ? 'Overlay map ready. Pan and pinch on open areas.' : 'Map ready with marker and camera move.');
         setError(null);
+        setMapReady(true);
       } catch (e) {
         setError(e instanceof Error ? e.message : String(e));
         setStatus('Failed to load map');
+        setMapReady(false);
       }
     };
 
@@ -113,8 +120,8 @@ const App = () => {
   return (
     <main
       className={`app ${mode !== 'embedded' ? 'app-overlay' : ''}`}
-      data-engine-enabled={engineEnabled ? 'true' : 'false'}
-      data-demo-status={error ? 'error' : status ? 'ready' : 'pending'}
+      data-engine-enabled={engineActive ? 'true' : 'false'}
+      data-demo-status={error ? 'error' : mapReady ? 'ready' : 'pending'}
     >
       {mode === 'overlay' && (
         <div className="map-overlay-ui">
@@ -142,15 +149,17 @@ const App = () => {
         <>
           <h1>@capgo/capacitor-native-map</h1>
           <p className="tagline">Google Maps on Android, Apple MapKit on iOS, Google Maps JS on web.</p>
-          <label className="engine-toggle">
-            <input
-              type="checkbox"
-              checked={engineEnabled}
-              onChange={(event) => setEngineEnabled(event.target.checked)}
-              data-testid="engine-toggle"
-            />
-            WebView Native UI Engine
-          </label>
+          {Capacitor.isNativePlatform() && (
+            <label className="engine-toggle">
+              <input
+                type="checkbox"
+                checked={engineEnabled}
+                onChange={(event) => setEngineEnabled(event.target.checked)}
+                data-testid="engine-toggle"
+              />
+              WebView Native UI Engine
+            </label>
+          )}
           <button type="button" className="mode-switch" onClick={() => setMode('overlay')}>
             Try HTML overlay (toBack)
           </button>

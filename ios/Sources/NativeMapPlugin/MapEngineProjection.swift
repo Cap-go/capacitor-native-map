@@ -26,6 +26,7 @@ final class MapEngineProjection {
         webView: WKWebView,
         pluginJsName: String,
         selector: String,
+        mapVisible: Bool,
         viewProvider: @escaping () -> UIView?
     ) {
         #if canImport(WebViewNativeUIEngine)
@@ -46,10 +47,16 @@ final class MapEngineProjection {
                 ),
                 view: viewProvider
             )
-            notifyShown()
+            if mapVisible {
+                notifyShown()
+            } else {
+                notifyHidden()
+            }
         } catch {
             CAPLog.print("[NativeMaps] WebView Native UI Engine unavailable: \(error)")
         }
+        #else
+        CAPLog.print("[NativeMaps] WebView Native UI Engine SDK not linked; webViewNativeUIEngine has no effect")
         #endif
     }
 

@@ -15,13 +15,13 @@ class MapEngineProjection(private val mapId: String) {
         webView: WebView,
         pluginId: String,
         projectionSelector: String,
+        mapVisible: Boolean,
         viewProvider: () -> View?,
     ) {
         if (projection != null) {
             return
         }
         try {
-            MapEngineInstall.ensureInstalled(webView)
             projection =
                 NativeUIProjection(
                     window,
@@ -39,7 +39,11 @@ class MapEngineProjection(private val mapId: String) {
                     ),
                     view = viewProvider,
                 )
-            notifyShown()
+            if (mapVisible) {
+                notifyShown()
+            } else {
+                notifyHidden()
+            }
         } catch (error: Throwable) {
             Log.e(TAG, "WebView Native UI Engine unavailable", error)
         }
@@ -72,26 +76,28 @@ class MapEngineProjection(private val mapId: String) {
 }
 
 object MapEngineInstall {
-  @Volatile private var installed = false
+    private var installedWebView: java.lang.ref.WeakReference<WebView>? = null
 
-  fun ensureInstalled(webView: WebView) {
-    if (installed) {
-      return
+    fun ensureInstalled(webView: WebView) {
+        val existing = installedWebView?.get()
+        if (existing === webView) {
+            return
+        }
+        synchronized(this) {
+            val current = installedWebView?.get()
+            if (current === webView) {
+                return
+            }
+            try {
+                NativeUIProjection.install(webView)
+                installedWebView = java.lang.ref.WeakReference(webView)
+            } catch (error: IllegalStateException) {
+                Log.w(
+                    "MapEngineInstall",
+                    "NativeUIProjection.install skipped (WebView already navigated); engine features may be limited",
+                    error,
+                )
+            }
+        }
     }
-    synchronized(this) {
-      if (installed) {
-        return
-      }
-      try {
-        NativeUIProjection.install(webView)
-        installed = true
-      } catch (error: IllegalStateException) {
-        Log.w(
-            "MapEngineInstall",
-            "NativeUIProjection.install skipped (WebView already navigated); engine features may be limited",
-            error,
-        )
-      }
-    }
-  }
 }

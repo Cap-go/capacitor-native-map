@@ -80,9 +80,9 @@ export interface CreateMapArgs {
    */
   webViewNativeUIEngine?: boolean;
   /**
-   * CSS selector for the Engine DOM projection host. Set automatically when
-   * {@link CreateMapArgs.webViewNativeUIEngine} is enabled; do not set manually unless you
-   * manage the slot yourself.
+   * CSS selector for an existing Engine DOM projection host you manage yourself.
+   * When omitted and {@link CreateMapArgs.webViewNativeUIEngine} is enabled, the plugin
+   * creates a slot and sets this value automatically before calling native `create`.
    */
   projectionSelector?: string;
 }

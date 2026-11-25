@@ -23,7 +23,8 @@ The example app includes a **WebView Native UI Engine** checkbox (native platfor
 
 ```bash
 cd example-app && bun install && bun run build && bunx cap sync ios
-maestro test .maestro/flows/engine-disabled-embedded.yaml
-maestro test .maestro/flows/engine-enabled-embedded.yaml
-maestro test .maestro/flows/native-map-smoke.yaml
+maestro test ../.maestro/flows/engine-disabled-embedded.yaml
+maestro test ../.maestro/flows/engine-enabled-embedded.yaml
+maestro test ../.maestro/flows/engine-enabled-missing-key.yaml
+maestro test ../.maestro/flows/native-map-smoke.yaml
 ```

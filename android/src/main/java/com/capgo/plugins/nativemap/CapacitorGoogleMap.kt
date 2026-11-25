@@ -209,6 +209,7 @@ class CapacitorNativeMapView(
             bridge.webView,
             delegate.pluginHandle.id,
             selector,
+            isMapVisible,
         ) { captureView }
     }
 
@@ -1043,6 +1044,8 @@ class CapacitorNativeMapView(
     }
 
     fun onDestroy() {
+        engineProjection?.close()
+        engineProjection = null
         mapView.onDestroy()
     }
 
