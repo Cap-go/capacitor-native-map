@@ -6,7 +6,7 @@ name: Engine enabled overlay map
     text: "Native map behind HTML"
 - extendedWaitUntil:
     visible:
-      text: "Overlay map ready"
+      text: ".*Overlay map ready.*"
     timeout: 60000
 - copyTextFrom:
     id: "map-status"

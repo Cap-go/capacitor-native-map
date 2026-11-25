@@ -135,6 +135,7 @@ export class NativeMap {
   private element: HTMLElement | null = null;
   private toBack = false;
   private webViewNativeUIEngine = false;
+  private ownsEngineProjectionSlot = false;
   private toBackLayout?: { x: number; y: number; width: number; height: number };
   private windowResizeHandler?: () => void;
   private engineScrollHandler?: () => void;
@@ -225,16 +226,18 @@ export class NativeMap {
       createOptions.webViewNativeUIEngine = true;
       if (manualProjectionSelector) {
         createOptions.projectionSelector = manualProjectionSelector;
+        newMap.ownsEngineProjectionSlot = false;
       } else {
         const layoutForSlot = toBack
           ? {
-              x: options.config.x ?? 0,
-              y: options.config.y ?? 0,
+              x: (options.config.x ?? 0) + window.scrollX,
+              y: (options.config.y ?? 0) + window.scrollY,
               width: options.config.width ?? window.innerWidth,
               height: options.config.height ?? window.innerHeight,
             }
           : undefined;
         createOptions.projectionSelector = ensureEngineProjectionSlot(hostElement, options.id, toBack, layoutForSlot);
+        newMap.ownsEngineProjectionSlot = true;
       }
     }
 
@@ -318,8 +321,8 @@ export class NativeMap {
       if (toBack) {
         newMap.windowResizeHandler = onResize;
         window.addEventListener('resize', onResize);
-        if (webViewNativeUIEngine) {
-          const onEngineScroll = (): void => newMap.updateMapBounds();
+        if (webViewNativeUIEngine && Capacitor.getPlatform() !== 'android') {
+          const onEngineScroll = (): void => newMap.syncEngineToBackSlotOnScroll();
           newMap.engineScrollHandler = onEngineScroll;
           window.addEventListener('scroll', onEngineScroll, { passive: true });
         }
@@ -372,7 +375,7 @@ export class NativeMap {
         NativeMap.releaseToBackDocumentClasses();
         newMap.toBackLayout = undefined;
       }
-      if (webViewNativeUIEngine) {
+      if (webViewNativeUIEngine && newMap.ownsEngineProjectionSlot) {
         removeEngineProjectionSlot(options.id);
       }
     };
@@ -722,8 +725,11 @@ export class NativeMap {
       this.toBackLayout = undefined;
     }
     if (this.webViewNativeUIEngine) {
-      removeEngineProjectionSlot(this.id);
+      if (this.ownsEngineProjectionSlot) {
+        removeEngineProjectionSlot(this.id);
+      }
       this.webViewNativeUIEngine = false;
+      this.ownsEngineProjectionSlot = false;
     }
 
     this.removeAllMapListeners();
@@ -900,7 +906,7 @@ export class NativeMap {
 
   handleScrollEvent = (): void => this.updateMapBounds();
 
-  private syncEngineToBackSlotOnScroll(): void {
+  syncEngineToBackSlotOnScroll(): void {
     if (!this.webViewNativeUIEngine || !this.toBack || !this.toBackLayout) {
       return;
     }
@@ -913,7 +919,9 @@ export class NativeMap {
   }
 
   private updateMapBounds(): void {
-    this.syncEngineToBackSlotOnScroll();
+    if (Capacitor.getPlatform() === 'android') {
+      this.syncEngineToBackSlotOnScroll();
+    }
     if (this.element) {
       CapacitorNativeMap.onScroll({
         id: this.id,

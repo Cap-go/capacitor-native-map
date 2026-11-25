@@ -92,7 +92,7 @@ class MapEngineProjection(private val mapId: String) {
 }
 
 object MapEngineInstall {
-    private var installedWebView: java.lang.ref.WeakReference<WebView>? = null
+    @Volatile private var installedWebView: java.lang.ref.WeakReference<WebView>? = null
 
     fun ensureInstalled(webView: WebView) {
         val existing = installedWebView?.get()

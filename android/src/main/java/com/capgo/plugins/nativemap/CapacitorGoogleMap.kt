@@ -211,7 +211,7 @@ class CapacitorNativeMapView(
             selector,
             isMapVisible,
             { captureView },
-        ) { event, data -> delegate.notifyListeners(event, data) }
+        ) { event, data -> delegate.notify(event, data) }
     }
 
     fun notifyEngineAppearanceIfNeeded() {

@@ -53,6 +53,7 @@ const App = () => {
 
       try {
         setMapReady(false);
+        setStatus('Initializing map...');
         await nativeMapRef.current?.destroy().catch(() => undefined);
         nativeMapRef.current = null;
 
