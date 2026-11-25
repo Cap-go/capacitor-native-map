@@ -20,6 +20,6 @@ Pod::Spec.new do |s|
 
   s.subspec 'WebViewNativeUIEngine' do |engine|
     engine.dependency 'CapgoCapacitorNativeMap/Lite'
-    engine.dependency 'WebViewNativeUIEngine'
+    engine.dependency 'WebViewNativeUIEngine', '1.0.11'
   end
 end

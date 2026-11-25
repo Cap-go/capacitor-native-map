@@ -16,3 +16,5 @@ name: iOS overlay HUD and sheet
     text: "Web sheet over map"
 - tapOn:
     text: "Close sheet"
+- assertNotVisible:
+    text: "Web sheet over map"

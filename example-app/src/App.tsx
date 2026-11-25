@@ -25,11 +25,25 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 const PLATFORM_LABEL = PLATFORM_LABELS[Capacitor.getPlatform()] ?? Capacitor.getPlatform();
 
-function waitForNativeMapReady(map: NativeMap, timeoutMs = 120_000): Promise<void> {
+function waitForNativeMapReady(
+  map: NativeMap,
+  shouldAbort: () => boolean,
+  timeoutMs = 120_000,
+): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error('onMapReady timeout')), timeoutMs);
+    const timer = setTimeout(() => {
+      if (shouldAbort()) {
+        resolve();
+        return;
+      }
+      reject(new Error('onMapReady timeout'));
+    }, timeoutMs);
     map.whenMapReady(() => {
       clearTimeout(timer);
+      if (shouldAbort()) {
+        resolve();
+        return;
+      }
       resolve();
     });
   });
@@ -48,9 +62,15 @@ const App = () => {
   const [error, setError] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const engineActive = engineEnabled && Capacitor.isNativePlatform();
+  const initGenerationRef = useRef(0);
+
+  useEffect(() => {
+    setSheetOpen(false);
+  }, [mode]);
 
   useEffect(() => {
     let destroyed = false;
+    const generation = ++initGenerationRef.current;
 
     const init = async () => {
       if (mode === 'embedded' && !mapHostRef.current) {
@@ -93,9 +113,9 @@ const App = () => {
         }
 
         nativeMapRef.current = map;
-        await waitForNativeMapReady(map);
+        await waitForNativeMapReady(map, () => destroyed || initGenerationRef.current !== generation);
 
-        if (destroyed) {
+        if (destroyed || initGenerationRef.current !== generation) {
           await map.destroy();
           return;
         }
@@ -123,6 +143,9 @@ const App = () => {
         setError(null);
         setMapReady(true);
       } catch (e) {
+        if (destroyed || initGenerationRef.current !== generation) {
+          return;
+        }
         setError(e instanceof Error ? e.message : String(e));
         setStatus('Failed to load map');
         setMapReady(false);

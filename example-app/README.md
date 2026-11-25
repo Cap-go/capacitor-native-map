@@ -21,7 +21,7 @@ The example app includes a **WebView Native UI Engine** checkbox (native platfor
 
 ## Maestro (from repo root)
 
-Build and sync first (`cd example-app && bun install && bun run build && bunx cap sync ios`).
+Build and sync first (`cd example-app && bun install && bun run build && bunx cap sync`).
 
 **iOS**
 
@@ -37,6 +37,11 @@ maestro test .maestro/flows/ios/overlay-sheet.yaml
 maestro test .maestro/flows/android/engine-off-embedded.yaml
 maestro test .maestro/flows/android/engine-on-embedded.yaml
 maestro test .maestro/flows/android/overlay-sheet.yaml
+```
+
+**Android missing API key (separate build without `VITE_GOOGLE_MAPS_API_KEY`)**
+
+```bash
 maestro test .maestro/flows/android/failure-missing-api-key.yaml
 ```
 

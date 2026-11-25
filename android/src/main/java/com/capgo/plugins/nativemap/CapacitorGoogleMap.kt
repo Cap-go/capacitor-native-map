@@ -168,6 +168,7 @@ class CapacitorNativeMapView(
         runBlocking {
             CoroutineScope(Dispatchers.Main).launch {
                 applyLayoutFromConfig()
+                engineProjection?.notifyUpdate()
             }
         }
     }

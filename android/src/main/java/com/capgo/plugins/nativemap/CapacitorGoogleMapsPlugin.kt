@@ -174,7 +174,10 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             val webViewNativeUIEngine = call.getBoolean("webViewNativeUIEngine", false)!!
             val projectionSelector = call.getString("projectionSelector")
             if (webViewNativeUIEngine) {
-                MapEngineInstall.ensureInstalled(bridge.webView)
+                runCatching { MapEngineInstall.ensureInstalled(bridge.webView) }
+                    .onFailure {
+                        Log.w(tag, "WebView Native UI Engine install failed; map created without the Engine channel", it)
+                    }
             }
             val newMap = CapacitorNativeMapView(id, config, this)
             newMap.toBack = toBack
