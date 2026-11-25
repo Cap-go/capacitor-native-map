@@ -233,12 +233,7 @@ export class NativeMap {
               height: options.config.height ?? window.innerHeight,
             }
           : undefined;
-        createOptions.projectionSelector = ensureEngineProjectionSlot(
-          hostElement,
-          options.id,
-          toBack,
-          layoutForSlot,
-        );
+        createOptions.projectionSelector = ensureEngineProjectionSlot(hostElement, options.id, toBack, layoutForSlot);
       }
     }
 
