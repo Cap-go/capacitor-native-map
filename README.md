@@ -60,7 +60,28 @@ keeps working in both embedded and overlay modes. Default is `false` for unchang
 
 Install the exact Engine version in your app (`@webview-native-ui/engine@1.0.11` to match this plugin) and add
 native dependencies: Swift Package Manager or CocoaPods on iOS, Maven (`io.github.webview-native-ui:engine:1.0.11`) on Android.
-CocoaPods apps also add `pod 'WebViewNativeUIEngine', :path => '../../node_modules/@webview-native-ui/engine'` in the app target.
+
+**CocoaPods (optional Engine):** the default `CapgoCapacitorNativeMap/Lite` subspec does not link the Engine module.
+When you enable `webViewNativeUIEngine`, add both pods in the app target:
+
+```ruby
+pod 'CapgoCapacitorNativeMap/WebViewNativeUIEngine', :path => '../../node_modules/@capgo/capacitor-native-map'
+pod 'WebViewNativeUIEngine', :path => '../../node_modules/@webview-native-ui/engine'
+```
+
+**Android channel install:** `MapEngineInstall` runs only when `webViewNativeUIEngine` is true on `create`, or when you opt in early via Capacitor config (default off, same as before the Engine integration):
+
+```json
+{
+  "plugins": {
+    "NativeMap": {
+      "preloadWebViewNativeUIEngine": true
+    }
+  }
+}
+```
+
+Set `preloadWebViewNativeUIEngine` only if you need the Engine channel installed before the first navigation (recommended for apps that always use the Engine). When unset or `false`, behavior matches pre-Engine Android startups.
 
 ## Why use it
 
@@ -182,6 +203,7 @@ Product teams often want a **fully custom map screen** (brand colors, filters, b
 1. Call `NativeMap.create({ toBack: true, ... })` so MapKit or Google Maps renders **behind** the Capacitor WebView.
 2. Make the WebView and page background **transparent** so the map is visible.
 3. Build controls in HTML. Use `data-map-overlay` (or interactive elements) on controls that must receive touches; transparent areas pass gestures to the map.
+   Fixed HUDs and bottom sheets should use `data-map-overlay` and avoid relying on `position: fixed` hit targets that sit only on WK compositing layers without interactive DOM — the plugin routes touches through `shouldRouteTouchToMap` for composited Web content.
 
 ### Transparent app / page CSS
 

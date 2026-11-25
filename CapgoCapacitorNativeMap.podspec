@@ -10,7 +10,16 @@ Pod::Spec.new do |s|
   s.homepage = package['repository']['url']
   s.author = package['author']
   s.source = { :git => package['repository']['url'].sub(/\Agit\+/, ''), :tag => s.version.to_s }
-  s.source_files = 'ios/Sources/**/*.{swift,h,m,c,cc,mm,cpp}'
   s.ios.deployment_target = '15.0'
-  s.dependency 'Capacitor'
+  s.default_subspec = 'Lite'
+
+  s.subspec 'Lite' do |lite|
+    lite.source_files = 'ios/Sources/**/*.{swift,h,m,c,cc,mm,cpp}'
+    lite.dependency 'Capacitor'
+  end
+
+  s.subspec 'WebViewNativeUIEngine' do |engine|
+    engine.dependency 'CapgoCapacitorNativeMap/Lite'
+    engine.dependency 'WebViewNativeUIEngine'
+  end
 end

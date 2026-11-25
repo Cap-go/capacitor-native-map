@@ -119,8 +119,8 @@ extension Map {
                 // old integer floor(558.5)=558 / ceil=559 comparison missed it,
                 // leaving the map unmounted. Older devices happened to land on
                 // whole points, which is why the exact check worked there.
-                let widthEqual = abs(width - refWidth) <= 1.0
-                let heightEqual = abs(height / 2.0 - refHeight) <= 1.0
+                let widthEqual = abs(width - refWidth) <= 2.0
+                let heightEqual = abs(height / 2.0 - refHeight) <= 2.0
                 if widthEqual && heightEqual && item.tag < (self.targetView?.tag ?? Map.mapTag) {
                     return item
                 }

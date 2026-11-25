@@ -56,7 +56,7 @@ private func shouldPassTouchThroughToMap(
         return false
     }
     let name = String(describing: type(of: hitView))
-    if name.contains("WKContentView") {
+    if name.contains("WKContentView") || name.contains("WKCompositingView") {
         return plugin.shouldRouteTouchToMap(at: point, in: webView)
     }
     if let childScrollClass = NSClassFromString("WKChildScrollView"),

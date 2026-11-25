@@ -25,8 +25,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 const PLATFORM_LABEL = PLATFORM_LABELS[Capacitor.getPlatform()] ?? Capacitor.getPlatform();
 
+function waitForNativeMapReady(map: NativeMap, timeoutMs = 120_000): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('onMapReady timeout')), timeoutMs);
+    map.whenMapReady(() => {
+      clearTimeout(timer);
+      resolve();
+    });
+  });
+}
+
 const App = () => {
-  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapHostRef = useRef<HTMLElement | null>(null);
   const nativeMapRef = useRef<NativeMap | null>(null);
   const [mode, setMode] = useState<DemoMode>(
     AUTO_TOUR ? 'tour' : Capacitor.isNativePlatform() ? 'overlay' : 'embedded',
@@ -36,31 +46,34 @@ const App = () => {
   const [mapReady, setMapReady] = useState(false);
   const [status, setStatus] = useState('Initializing map...');
   const [error, setError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const engineActive = engineEnabled && Capacitor.isNativePlatform();
 
   useEffect(() => {
     let destroyed = false;
 
     const init = async () => {
-      if (mode === 'embedded' && !mapRef.current) {
+      if (mode === 'embedded' && !mapHostRef.current) {
         return;
       }
       if (Capacitor.getPlatform() !== 'ios' && !API_KEY) {
         setError('Set VITE_GOOGLE_MAPS_API_KEY for web and Android builds.');
         setStatus('Missing API key');
+        setMapReady(false);
         return;
       }
 
       try {
         setMapReady(false);
         setStatus('Initializing map...');
+        setError(null);
         await nativeMapRef.current?.destroy().catch(() => undefined);
         nativeMapRef.current = null;
 
         const overlay = (mode === 'overlay' || mode === 'tour') && Capacitor.isNativePlatform();
         const map = await NativeMap.create({
           id: overlay ? 'overlay-map' : 'demo-map',
-          element: overlay ? document.body : mapRef.current!,
+          element: overlay ? document.body : mapHostRef.current!,
           toBack: overlay,
           webViewNativeUIEngine: Capacitor.isNativePlatform() && engineEnabled,
           apiKey: API_KEY,
@@ -80,6 +93,13 @@ const App = () => {
         }
 
         nativeMapRef.current = map;
+        await waitForNativeMapReady(map);
+
+        if (destroyed) {
+          await map.destroy();
+          return;
+        }
+
         if (mode === 'tour') {
           setStatus('');
           setError(null);
@@ -131,8 +151,14 @@ const App = () => {
             <p>Buttons stay in the WebView. Open areas pass gestures to the map.</p>
           </header>
           <div className="overlay-actions" data-map-overlay>
-            <button type="button" onClick={() => setStatus('Recentering...')}>
+            <button
+              type="button"
+              onClick={() => setStatus('Recentering...')}
+            >
               HUD button
+            </button>
+            <button type="button" onClick={() => setSheetOpen(true)}>
+              Open sheet
             </button>
             <button type="button" onClick={() => setMode('embedded')}>
               Embedded demo
@@ -143,6 +169,15 @@ const App = () => {
               </button>
             )}
           </div>
+          {sheetOpen && (
+            <div className="sheet-modal" data-map-overlay>
+              <p className="sheet-title">Web sheet over map</p>
+              <p>Touches here stay on the Web layer, not the map.</p>
+              <button type="button" onClick={() => setSheetOpen(false)}>
+                Close sheet
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -156,7 +191,6 @@ const App = () => {
                 type="checkbox"
                 checked={engineEnabled}
                 onChange={(event) => setEngineEnabled(event.target.checked)}
-                data-testid="engine-toggle"
               />
               WebView Native UI Engine
             </label>
@@ -164,7 +198,12 @@ const App = () => {
           <button type="button" className="mode-switch" onClick={() => setMode('overlay')}>
             Try HTML overlay (toBack)
           </button>
-          <div ref={mapRef} className="map-container" />
+          <capacitor-native-map
+            ref={(el) => {
+              mapHostRef.current = el;
+            }}
+            className="map-container"
+          />
         </>
       )}
 
@@ -187,9 +226,7 @@ const App = () => {
         </div>
       )}
 
-      <p className="status-message" data-testid="map-status">
-        {status}
-      </p>
+      <p className="status-message">{status}</p>
       {error && <p className="error">{error}</p>}
     </main>
   );

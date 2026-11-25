@@ -48,14 +48,16 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
     override fun load() {
         super.load()
 
-        runCatching { MapEngineInstall.ensureInstalled(bridge.webView) }
-                .onFailure {
-                    Log.w(
-                            tag,
-                            "WebView Native UI Engine channel not installed; enable webViewNativeUIEngine only when install succeeded",
-                            it,
-                    )
-                }
+        if (getConfig().getBoolean("preloadWebViewNativeUIEngine", false)) {
+            runCatching { MapEngineInstall.ensureInstalled(bridge.webView) }
+                    .onFailure {
+                        Log.w(
+                                tag,
+                                "WebView Native UI Engine preload failed; set preloadWebViewNativeUIEngine only when using the Engine",
+                                it,
+                        )
+                    }
+        }
 
         MapsInitializer.initialize(this.context, MapsInitializer.Renderer.LATEST, this)
 
@@ -171,6 +173,9 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             val toBack = call.getBoolean("toBack", false)!!
             val webViewNativeUIEngine = call.getBoolean("webViewNativeUIEngine", false)!!
             val projectionSelector = call.getString("projectionSelector")
+            if (webViewNativeUIEngine) {
+                MapEngineInstall.ensureInstalled(bridge.webView)
+            }
             val newMap = CapacitorNativeMapView(id, config, this)
             newMap.toBack = toBack
             newMap.webViewNativeUIEngine = webViewNativeUIEngine

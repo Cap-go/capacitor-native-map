@@ -154,6 +154,8 @@ class CapacitorNativeMapView(
                         )
                     }
                 }
+
+                setupEngineProjectionIfNeeded()
         }
     }
 
@@ -1060,7 +1062,6 @@ class CapacitorNativeMapView(
         val data = JSObject()
         data.put("mapId", this@CapacitorNativeMapView.id)
         delegate.notify("onMapReady", data)
-        setupEngineProjectionIfNeeded()
 
         CoroutineScope(Dispatchers.Main).launch {
             if (isDestroyed) {
