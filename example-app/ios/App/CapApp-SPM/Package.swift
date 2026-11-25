@@ -12,7 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.2"),
-        .package(name: "CapgoCapacitorNativeMap", path: "../../../node_modules/.bun/@capgo+capacitor-native-map@file+../node_modules/@capgo/capacitor-native-map")
+        .package(name: "CapgoCapacitorNativeMap", path: "../../../node_modules/@capgo/capacitor-native-map")
     ],
     targets: [
         .target(

@@ -51,11 +51,44 @@ We build, improve and fix our plugins with heavy use of AI, so issues usually ge
 
 [Learn more about how we build with AI](https://capgo.app/docs/plugins/ai-engineering/)
 
+## WebView Native UI Engine (optional)
+
+Set `webViewNativeUIEngine: true` on `NativeMap.create` to integrate
+[`@webview-native-ui/engine`](https://github.com/webview-native-ui/engine) (MIT). The map scrolls with your page,
+and Web overlays can sit above the native map using the Engine snapshot handoff while `toBack` touch passthrough
+keeps working in both embedded and overlay modes. Default is `false` for unchanged behavior.
+
+Install the exact Engine version in your app (`@webview-native-ui/engine@1.0.11` to match this plugin) and add
+native dependencies: Swift Package Manager or CocoaPods on iOS, Maven (`io.github.webview-native-ui:engine:1.0.11`) on Android.
+
+**CocoaPods (optional Engine):** the default `CapgoCapacitorNativeMap/Lite` subspec does not link the Engine module.
+When you enable `webViewNativeUIEngine`, add both pods in the app target:
+
+```ruby
+pod 'CapgoCapacitorNativeMap/WebViewNativeUIEngine', :path => '../../node_modules/@capgo/capacitor-native-map'
+pod 'WebViewNativeUIEngine', :path => '../../node_modules/@webview-native-ui/engine'
+```
+
+**Android channel install:** `MapEngineInstall` runs only when `webViewNativeUIEngine` is true on `create`, or when you opt in early via Capacitor config (default off, same as before the Engine integration):
+
+```json
+{
+  "plugins": {
+    "NativeMap": {
+      "preloadWebViewNativeUIEngine": true
+    }
+  }
+}
+```
+
+Set `preloadWebViewNativeUIEngine` only if you need the Engine channel installed before the first navigation (recommended for apps that always use the Engine). When unset or `false`, behavior matches pre-Engine Android startups.
+
 ## Why use it
 
 - **Single API** on iOS, Android, and web (`NativeMap.create`, shared listeners, shared types).
 - **Native map performance** on mobile (platform map views, not a WebView map).
 - **Custom map UI** with `toBack`: render the native map behind a transparent WebView and build controls in HTML.
+- **Scroll and z-order** with optional `webViewNativeUIEngine` for feed-style layouts and Web modals over the map.
 - **Capacitor 8** with TypeScript 6 and an example app you can run locally.
 
 ## Features
@@ -64,6 +97,7 @@ We build, improve and fix our plugins with heavy use of AI, so issues usually ge
 | --- | --- |
 | **Map lifecycle** | Create, destroy, resize, `show` / `hide`, `updateLayout`, scroll sync with Ionic |
 | **Background mode** | `toBack` compositing, multi-touch passthrough on transparent HTML (pinch, rotate, tilt, pan) |
+| **Engine (optional)** | `webViewNativeUIEngine` scroll sync and Web overlay projection via `@webview-native-ui/engine` |
 | **Camera** | Center, zoom, bearing, tilt, fit bounds, min/max zoom |
 | **Markers** | Add/update/remove, drag, selection, callouts, clustering |
 | **Overlays** | Polygons, polylines, circles, tile overlays (platform-dependent) |
@@ -169,6 +203,7 @@ Product teams often want a **fully custom map screen** (brand colors, filters, b
 1. Call `NativeMap.create({ toBack: true, ... })` so MapKit or Google Maps renders **behind** the Capacitor WebView.
 2. Make the WebView and page background **transparent** so the map is visible.
 3. Build controls in HTML. Use `data-map-overlay` (or interactive elements) on controls that must receive touches; transparent areas pass gestures to the map.
+   Fixed HUDs and bottom sheets should use `data-map-overlay` and avoid relying on `position: fixed` hit targets that sit only on WK compositing layers without interactive DOM — the plugin routes touches through `shouldRouteTouchToMap` for composited Web content.
 
 ### Transparent app / page CSS
 
@@ -1249,16 +1284,18 @@ Hides the native map view while keeping the instance alive.
 
 An interface containing the options used when creating a map.
 
-| Prop              | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Default            |
-| ----------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ |
-| **`id`**          | <code>string</code>                                         | A unique identifier for the map instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                    |
-| **`apiKey`**      | <code>string</code>                                         | Google Maps API key. Required on web. On Android, also set `com.google.android.geo.API_KEY` in the app manifest. Not used on iOS (MapKit).                                                                                                                                                                                                                                                                                                                                                                          |                    |
-| **`config`**      | <code><a href="#nativemapconfig">NativeMapConfig</a></code> | The initial configuration settings for the map.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                    |
-| **`element`**     | <code>HTMLElement</code>                                    | The DOM element that determines size and positioning for embedded maps. Optional when `toBack` is `true` (defaults to `document.body`).                                                                                                                                                                                                                                                                                                                                                                             |                    |
-| **`forceCreate`** | <code>boolean</code>                                        | Destroy and re-create the map instance if a map with the supplied id already exists                                                                                                                                                                                                                                                                                                                                                                                                                                 | <code>false</code> |
-| **`region`**      | <code>string</code>                                         | The region parameter alters your application to serve different map tiles or bias the application (such as biasing geocoding results towards the region). Only available for web.                                                                                                                                                                                                                                                                                                                                   |                    |
-| **`language`**    | <code>string</code>                                         | The language parameter affects the names of controls, copyright notices, driving directions, and control labels, as well as the responses to service requests. Only available for web.                                                                                                                                                                                                                                                                                                                              |                    |
-| **`toBack`**      | <code>boolean</code>                                        | When `true`, renders the native map behind a transparent WebView so your HTML UI can sit on top. Touches on transparent web areas pass through to the map, including multi-touch gestures (pinch zoom, rotate, two-finger tilt, pan). Touches on interactive HTML elements stay in the WebView. On native platforms, set `config.x`, `config.y`, `config.width`, and `config.height` for position and size (defaults to the viewport when omitted). Use {@link NativeMap.updateLayout} to change layout at runtime. | <code>false</code> |
+| Prop                        | Type                                                        | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | Default            | Since |
+| --------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----- |
+| **`id`**                    | <code>string</code>                                         | A unique identifier for the map instance.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |                    |       |
+| **`apiKey`**                | <code>string</code>                                         | Google Maps API key. Required on web. On Android, also set `com.google.android.geo.API_KEY` in the app manifest. Not used on iOS (MapKit).                                                                                                                                                                                                                                                                                                                                                                          |                    |       |
+| **`config`**                | <code><a href="#nativemapconfig">NativeMapConfig</a></code> | The initial configuration settings for the map.                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |                    |       |
+| **`element`**               | <code>HTMLElement</code>                                    | The DOM element that determines size and positioning for embedded maps. Optional when `toBack` is `true` (defaults to `document.body`).                                                                                                                                                                                                                                                                                                                                                                             |                    |       |
+| **`forceCreate`**           | <code>boolean</code>                                        | Destroy and re-create the map instance if a map with the supplied id already exists                                                                                                                                                                                                                                                                                                                                                                                                                                 | <code>false</code> |       |
+| **`region`**                | <code>string</code>                                         | The region parameter alters your application to serve different map tiles or bias the application (such as biasing geocoding results towards the region). Only available for web.                                                                                                                                                                                                                                                                                                                                   |                    |       |
+| **`language`**              | <code>string</code>                                         | The language parameter affects the names of controls, copyright notices, driving directions, and control labels, as well as the responses to service requests. Only available for web.                                                                                                                                                                                                                                                                                                                              |                    |       |
+| **`toBack`**                | <code>boolean</code>                                        | When `true`, renders the native map behind a transparent WebView so your HTML UI can sit on top. Touches on transparent web areas pass through to the map, including multi-touch gestures (pinch zoom, rotate, two-finger tilt, pan). Touches on interactive HTML elements stay in the WebView. On native platforms, set `config.x`, `config.y`, `config.width`, and `config.height` for position and size (defaults to the viewport when omitted). Use {@link NativeMap.updateLayout} to change layout at runtime. | <code>false</code> |       |
+| **`webViewNativeUIEngine`** | <code>boolean</code>                                        | Enables [@webview-native-ui/engine](https://github.com/webview-native-ui/engine) so the map can scroll with the page and Web UI can cover the native layer with snapshot projection. Requires `@webview-native-ui/engine` in the app and matching native dependencies on iOS/Android. Ignored on web. When `false`, native and TypeScript behavior matches maps created without this flag.                                                                                                                          | <code>false</code> | 8.2.0 |
+| **`projectionSelector`**    | <code>string</code>                                         | CSS selector for an existing Engine DOM projection host you manage yourself. When omitted and {@link <a href="#createmapargs">CreateMapArgs.webViewNativeUIEngine</a>} is enabled, the plugin creates a slot and sets this value automatically before calling native `create`.                                                                                                                                                                                                                                      |                    |       |
 
 
 #### NativeMapConfig

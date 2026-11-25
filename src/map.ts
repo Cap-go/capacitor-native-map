@@ -22,6 +22,11 @@ import type {
   TileOverlay,
 } from './definitions';
 import { LatLngBounds, MapType } from './definitions';
+import {
+  ensureEngineProjectionSlot,
+  removeEngineProjectionSlot,
+  syncEngineProjectionSlotLayout,
+} from './engine-projection';
 import type { CreateMapArgs } from './implementation';
 import { CapacitorNativeMap } from './implementation';
 import { MapReadyQueue } from './map-ready';
@@ -129,8 +134,11 @@ export class NativeMap {
   private id: string;
   private element: HTMLElement | null = null;
   private toBack = false;
+  private webViewNativeUIEngine = false;
+  private ownsEngineProjectionSlot = false;
   private toBackLayout?: { x: number; y: number; width: number; height: number };
   private windowResizeHandler?: () => void;
+  private engineScrollHandler?: () => void;
   private resizeObserver: ResizeObserver | null = null;
   private orientationChangeTimeoutId?: ReturnType<typeof setTimeout>;
   private orientationChangeHandler = (): void => {
@@ -188,7 +196,9 @@ export class NativeMap {
     const newMap = new NativeMap(options.id);
 
     const toBack = options.toBack === true;
+    const webViewNativeUIEngine = options.webViewNativeUIEngine === true;
     newMap.toBack = toBack;
+    newMap.webViewNativeUIEngine = webViewNativeUIEngine;
 
     if (!toBack && !options.element) {
       throw new Error('element is required when toBack is false');
@@ -199,14 +209,37 @@ export class NativeMap {
       throw new Error('container element is required');
     }
 
+    const manualProjectionSelector = options.projectionSelector;
+    const restCreate: CreateMapArgs = { ...options };
+    delete restCreate.webViewNativeUIEngine;
+    delete restCreate.projectionSelector;
     const createOptions: CreateMapArgs = {
-      ...options,
+      ...restCreate,
       toBack,
       config: {
         ...options.config,
         androidLiteMode: options.config.androidLiteMode ?? false,
       },
     };
+
+    if (webViewNativeUIEngine && Capacitor.isNativePlatform()) {
+      createOptions.webViewNativeUIEngine = true;
+      if (manualProjectionSelector) {
+        createOptions.projectionSelector = manualProjectionSelector;
+        newMap.ownsEngineProjectionSlot = false;
+      } else {
+        const layoutForSlot = toBack
+          ? {
+              x: (options.config.x ?? 0) + window.scrollX,
+              y: (options.config.y ?? 0) + window.scrollY,
+              width: options.config.width ?? window.innerWidth,
+              height: options.config.height ?? window.innerHeight,
+            }
+          : undefined;
+        createOptions.projectionSelector = ensureEngineProjectionSlot(hostElement, options.id, toBack, layoutForSlot);
+        newMap.ownsEngineProjectionSlot = true;
+      }
+    }
 
     newMap.element = hostElement;
     if (!toBack) {
@@ -288,6 +321,11 @@ export class NativeMap {
       if (toBack) {
         newMap.windowResizeHandler = onResize;
         window.addEventListener('resize', onResize);
+        if (webViewNativeUIEngine && Capacitor.getPlatform() !== 'android') {
+          const onEngineScroll = (): void => newMap.syncEngineToBackSlotOnScroll();
+          newMap.engineScrollHandler = onEngineScroll;
+          window.addEventListener('scroll', onEngineScroll, { passive: true });
+        }
       } else {
         newMap.resizeObserver = new ResizeObserver(() => {
           if (newMap.element != null) {
@@ -327,11 +365,18 @@ export class NativeMap {
           window.removeEventListener('resize', newMap.windowResizeHandler);
           newMap.windowResizeHandler = undefined;
         }
+        if (newMap.engineScrollHandler) {
+          window.removeEventListener('scroll', newMap.engineScrollHandler);
+          newMap.engineScrollHandler = undefined;
+        }
         newMap.disableScrolling();
       }
       if (toBack) {
         NativeMap.releaseToBackDocumentClasses();
         newMap.toBackLayout = undefined;
+      }
+      if (webViewNativeUIEngine && newMap.ownsEngineProjectionSlot) {
+        removeEngineProjectionSlot(options.id);
       }
     };
 
@@ -381,6 +426,10 @@ export class NativeMap {
         window.removeEventListener('resize', this.windowResizeHandler);
         this.windowResizeHandler = undefined;
       }
+      if (this.engineScrollHandler) {
+        window.removeEventListener('scroll', this.engineScrollHandler);
+        this.engineScrollHandler = undefined;
+      }
       this.disableScrolling();
     }
 
@@ -389,6 +438,7 @@ export class NativeMap {
       this.toBackLayout = undefined;
       this.toBack = false;
     }
+    this.webViewNativeUIEngine = false;
 
     this.removeAllMapListeners();
   }
@@ -472,6 +522,9 @@ export class NativeMap {
           width: layout.width ?? this.toBackLayout.width,
           height: layout.height ?? this.toBackLayout.height,
         };
+        if (this.webViewNativeUIEngine && this.toBackLayout) {
+          syncEngineProjectionSlotLayout(this.id, this.toBackLayout);
+        }
       }
       this.updateMapBounds();
     }
@@ -661,11 +714,22 @@ export class NativeMap {
         window.removeEventListener('resize', this.windowResizeHandler);
         this.windowResizeHandler = undefined;
       }
+      if (this.engineScrollHandler) {
+        window.removeEventListener('scroll', this.engineScrollHandler);
+        this.engineScrollHandler = undefined;
+      }
     }
 
     if (this.toBack) {
       NativeMap.releaseToBackDocumentClasses();
       this.toBackLayout = undefined;
+    }
+    if (this.webViewNativeUIEngine) {
+      if (this.ownsEngineProjectionSlot) {
+        removeEngineProjectionSlot(this.id);
+      }
+      this.webViewNativeUIEngine = false;
+      this.ownsEngineProjectionSlot = false;
     }
 
     this.removeAllMapListeners();
@@ -842,7 +906,22 @@ export class NativeMap {
 
   handleScrollEvent = (): void => this.updateMapBounds();
 
+  syncEngineToBackSlotOnScroll(): void {
+    if (!this.webViewNativeUIEngine || !this.toBack || !this.toBackLayout) {
+      return;
+    }
+    syncEngineProjectionSlotLayout(this.id, {
+      x: this.toBackLayout.x + window.scrollX,
+      y: this.toBackLayout.y + window.scrollY,
+      width: this.toBackLayout.width,
+      height: this.toBackLayout.height,
+    });
+  }
+
   private updateMapBounds(): void {
+    if (Capacitor.getPlatform() === 'android') {
+      this.syncEngineToBackSlotOnScroll();
+    }
     if (this.element) {
       CapacitorNativeMap.onScroll({
         id: this.id,

@@ -54,6 +54,9 @@ class CapacitorNativeMapView(
     private var mapViewParent: FrameLayout? = null
     private var isDestroyed = false
     var toBack: Boolean = false
+    var webViewNativeUIEngine: Boolean = false
+    var projectionSelector: String? = null
+    var engineProjection: MapEngineProjection? = null
     var isMapVisible: Boolean = true
     private var originalWebViewAlpha: Float? = null
 
@@ -151,6 +154,8 @@ class CapacitorNativeMapView(
                         )
                     }
                 }
+
+                setupEngineProjectionIfNeeded()
         }
     }
 
@@ -163,6 +168,7 @@ class CapacitorNativeMapView(
         runBlocking {
             CoroutineScope(Dispatchers.Main).launch {
                 applyLayoutFromConfig()
+                engineProjection?.notifyUpdate()
             }
         }
     }
@@ -174,6 +180,7 @@ class CapacitorNativeMapView(
         config.height = height
         CoroutineScope(Dispatchers.Main).launch {
             applyLayoutFromConfig()
+            engineProjection?.notifyUpdate()
         }
     }
 
@@ -181,7 +188,37 @@ class CapacitorNativeMapView(
         isMapVisible = isVisible
         CoroutineScope(Dispatchers.Main).launch {
             mapViewParent?.visibility = if (isVisible) View.VISIBLE else View.GONE
+            if (isVisible) {
+                engineProjection?.notifyShown()
+            } else {
+                engineProjection?.notifyHidden()
+            }
         }
+    }
+
+    fun setupEngineProjectionIfNeeded() {
+        if (!webViewNativeUIEngine) {
+            return
+        }
+        val selector = projectionSelector ?: return
+        val bridge = delegate.bridge
+        val activity = bridge.activity ?: return
+        if (engineProjection == null) {
+            engineProjection = MapEngineProjection(id)
+        }
+        val captureView = mapViewParent ?: mapView
+        engineProjection?.start(
+            activity.window,
+            bridge.webView,
+            delegate.pluginHandle.id,
+            selector,
+            isMapVisible,
+            { captureView },
+        ) { event, data -> delegate.notify(event, data) }
+    }
+
+    fun notifyEngineAppearanceIfNeeded() {
+        engineProjection?.notifyUpdate()
     }
 
     private fun applyLayoutFromConfig() {
@@ -256,6 +293,8 @@ class CapacitorNativeMapView(
             val job =
                     CoroutineScope(Dispatchers.Main).launch {
                         isDestroyed = true
+                        engineProjection?.close()
+                        engineProjection = null
                         val bridge = delegate.bridge
 
                         val viewToRemove: View? =
@@ -1009,6 +1048,8 @@ class CapacitorNativeMapView(
     }
 
     fun onDestroy() {
+        engineProjection?.close()
+        engineProjection = null
         mapView.onDestroy()
     }
 
@@ -1195,6 +1236,7 @@ class CapacitorNativeMapView(
         data.put("zoom", this@CapacitorNativeMapView.googleMap?.cameraPosition?.zoom)
         delegate.notify("onCameraIdle", data)
         delegate.notify("onBoundsChanged", data)
+        notifyEngineAppearanceIfNeeded()
     }
 
     override fun onCameraMoveStarted(reason: Int) {

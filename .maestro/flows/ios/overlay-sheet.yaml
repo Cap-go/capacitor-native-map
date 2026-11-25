@@ -1,0 +1,20 @@
+appId: app.capgo.nativemap
+name: iOS overlay HUD and sheet
+---
+- launchApp
+- extendedWaitUntil:
+    visible:
+      text: ".*Overlay map ready.*"
+    timeout: 120000
+- tapOn:
+    text: "HUD button"
+- assertVisible:
+    text: "Recentering..."
+- tapOn:
+    text: "Open sheet"
+- assertVisible:
+    text: "Web sheet over map"
+- tapOn:
+    text: "Close sheet"
+- assertNotVisible:
+    text: "Web sheet over map"

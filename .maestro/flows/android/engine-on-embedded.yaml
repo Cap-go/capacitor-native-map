@@ -1,0 +1,15 @@
+appId: app.capgo.nativemap
+name: Android engine on embedded
+---
+- launchApp
+- tapOn:
+    text: "Embedded demo"
+    optional: true
+- tapOn:
+    text: "WebView Native UI Engine"
+- extendedWaitUntil:
+    visible:
+      text: "Map ready with marker"
+    timeout: 120000
+- assertVisible:
+    text: "Map ready with marker"

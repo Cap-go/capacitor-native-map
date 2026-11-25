@@ -92,7 +92,13 @@
     "typescript": "^6.0.3"
   },
   "peerDependencies": {
-    "@capacitor/core": ">=8.0.0"
+    "@capacitor/core": ">=8.0.0",
+    "@webview-native-ui/engine": "1.0.11"
+  },
+  "peerDependenciesMeta": {
+    "@webview-native-ui/engine": {
+      "optional": true
+    }
   },
   "prettier": "@ionic/prettier-config",
   "swiftlint": "@ionic/swiftlint-config",

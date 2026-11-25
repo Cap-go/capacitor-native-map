@@ -1,4 +1,6 @@
 appId: app.capgo.nativemap
 name: Native map smoke
 ---
-- assertVisible: "@capgo/capacitor-native-map"
+- launchApp
+- assertVisible:
+    text: "Native map behind HTML"

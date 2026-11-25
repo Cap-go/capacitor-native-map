@@ -48,6 +48,17 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
     override fun load() {
         super.load()
 
+        if (getConfig().getBoolean("preloadWebViewNativeUIEngine", false)) {
+            runCatching { MapEngineInstall.ensureInstalled(bridge.webView) }
+                    .onFailure {
+                        Log.w(
+                                tag,
+                                "WebView Native UI Engine preload failed; set preloadWebViewNativeUIEngine only when using the Engine",
+                                it,
+                        )
+                    }
+        }
+
         MapsInitializer.initialize(this.context, MapsInitializer.Renderer.LATEST, this)
 
 
@@ -160,8 +171,18 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
             }
 
             val toBack = call.getBoolean("toBack", false)!!
+            val webViewNativeUIEngine = call.getBoolean("webViewNativeUIEngine", false)!!
+            val projectionSelector = call.getString("projectionSelector")
+            if (webViewNativeUIEngine) {
+                runCatching { MapEngineInstall.ensureInstalled(bridge.webView) }
+                    .onFailure {
+                        Log.w(tag, "WebView Native UI Engine install failed; map created without the Engine channel", it)
+                    }
+            }
             val newMap = CapacitorNativeMapView(id, config, this)
             newMap.toBack = toBack
+            newMap.webViewNativeUIEngine = webViewNativeUIEngine
+            newMap.projectionSelector = projectionSelector
             maps[id] = newMap
 
             call.resolve()
@@ -1178,6 +1199,15 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
 
     fun notify(event: String, data: JSObject) {
         notifyListeners(event, data)
+    }
+
+    override fun notifyListeners(eventName: String, data: JSObject, retainUntilConsumed: Boolean) {
+        if (eventName in MapEngineProjection.ENGINE_EVENT_NAMES) {
+            maps.values.forEach { map ->
+                map.engineProjection?.receiveFromPlugin(eventName, data)
+            }
+        }
+        super.notifyListeners(eventName, data, retainUntilConsumed)
     }
 
     private fun handleError(call: PluginCall, e: Exception) {

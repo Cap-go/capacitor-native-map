@@ -88,5 +88,6 @@ extension NativeMapPlugin {
         ]
         notifyListeners("onBoundsChanged", data: payload)
         notifyListeners("onCameraIdle", data: payload)
+        map.notifyEngineAppearanceIfNeeded()
     }
 }

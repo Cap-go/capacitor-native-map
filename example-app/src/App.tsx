@@ -9,6 +9,11 @@ const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? '';
 
 type DemoMode = 'embedded' | 'overlay' | 'tour';
 
+const ENGINE_DEFAULT =
+  import.meta.env.VITE_WEBVIEW_NATIVE_UI_ENGINE === '1' ||
+  import.meta.env.VITE_WEBVIEW_NATIVE_UI_ENGINE === 'true' ||
+  false;
+
 // The tour drives the native overlay map, so it only runs on iOS and Android.
 const TOUR_SUPPORTED = Capacitor.isNativePlatform();
 // Start straight into the demo tour (used to record the README videos).
@@ -20,38 +25,77 @@ const PLATFORM_LABELS: Record<string, string> = {
 };
 const PLATFORM_LABEL = PLATFORM_LABELS[Capacitor.getPlatform()] ?? Capacitor.getPlatform();
 
+function waitForNativeMapReady(
+  map: NativeMap,
+  shouldAbort: () => boolean,
+  timeoutMs = 120_000,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      if (shouldAbort()) {
+        resolve();
+        return;
+      }
+      reject(new Error('onMapReady timeout'));
+    }, timeoutMs);
+    map.whenMapReady(() => {
+      clearTimeout(timer);
+      if (shouldAbort()) {
+        resolve();
+        return;
+      }
+      resolve();
+    });
+  });
+}
+
 const App = () => {
-  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapHostRef = useRef<HTMLElement | null>(null);
   const nativeMapRef = useRef<NativeMap | null>(null);
   const [mode, setMode] = useState<DemoMode>(
     AUTO_TOUR ? 'tour' : Capacitor.isNativePlatform() ? 'overlay' : 'embedded',
   );
   const [tourStep, setTourStep] = useState<{ step: TourStep; index: number } | null>(null);
+  const [engineEnabled, setEngineEnabled] = useState(ENGINE_DEFAULT);
+  const [mapReady, setMapReady] = useState(false);
   const [status, setStatus] = useState('Initializing map...');
   const [error, setError] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const engineActive = engineEnabled && Capacitor.isNativePlatform();
+  const initGenerationRef = useRef(0);
+
+  useEffect(() => {
+    setSheetOpen(false);
+  }, [mode]);
 
   useEffect(() => {
     let destroyed = false;
+    const generation = ++initGenerationRef.current;
 
     const init = async () => {
-      if (mode === 'embedded' && !mapRef.current) {
+      if (mode === 'embedded' && !mapHostRef.current) {
         return;
       }
       if (Capacitor.getPlatform() !== 'ios' && !API_KEY) {
         setError('Set VITE_GOOGLE_MAPS_API_KEY for web and Android builds.');
         setStatus('Missing API key');
+        setMapReady(false);
         return;
       }
 
       try {
+        setMapReady(false);
+        setStatus('Initializing map...');
+        setError(null);
         await nativeMapRef.current?.destroy().catch(() => undefined);
         nativeMapRef.current = null;
 
         const overlay = (mode === 'overlay' || mode === 'tour') && Capacitor.isNativePlatform();
         const map = await NativeMap.create({
           id: overlay ? 'overlay-map' : 'demo-map',
-          element: overlay ? document.body : mapRef.current!,
+          element: overlay ? document.body : mapHostRef.current!,
           toBack: overlay,
+          webViewNativeUIEngine: Capacitor.isNativePlatform() && engineEnabled,
           apiKey: API_KEY,
           config: {
             center: DEFAULT_CENTER,
@@ -69,9 +113,17 @@ const App = () => {
         }
 
         nativeMapRef.current = map;
+        await waitForNativeMapReady(map, () => destroyed || initGenerationRef.current !== generation);
+
+        if (destroyed || initGenerationRef.current !== generation) {
+          await map.destroy();
+          return;
+        }
+
         if (mode === 'tour') {
           setStatus('');
           setError(null);
+          setMapReady(true);
           while (!destroyed) {
             await playTour(map, (step, index) => setTourStep({ step, index }), () => destroyed);
           }
@@ -89,9 +141,14 @@ const App = () => {
         });
         setStatus(overlay ? 'Overlay map ready. Pan and pinch on open areas.' : 'Map ready with marker and camera move.');
         setError(null);
+        setMapReady(true);
       } catch (e) {
+        if (destroyed || initGenerationRef.current !== generation) {
+          return;
+        }
         setError(e instanceof Error ? e.message : String(e));
         setStatus('Failed to load map');
+        setMapReady(false);
       }
     };
 
@@ -102,10 +159,14 @@ const App = () => {
       nativeMapRef.current?.destroy().catch(() => undefined);
       nativeMapRef.current = null;
     };
-  }, [mode]);
+  }, [mode, engineEnabled]);
 
   return (
-    <main className={`app ${mode !== 'embedded' ? 'app-overlay' : ''}`}>
+    <main
+      className={`app ${mode !== 'embedded' ? 'app-overlay' : ''}`}
+      data-engine-enabled={engineActive ? 'true' : 'false'}
+      data-demo-status={error ? 'error' : mapReady ? 'ready' : 'pending'}
+    >
       {mode === 'overlay' && (
         <div className="map-overlay-ui">
           <header className="overlay-bar" data-map-overlay>
@@ -113,8 +174,14 @@ const App = () => {
             <p>Buttons stay in the WebView. Open areas pass gestures to the map.</p>
           </header>
           <div className="overlay-actions" data-map-overlay>
-            <button type="button" onClick={() => setStatus('Recentering...')}>
+            <button
+              type="button"
+              onClick={() => setStatus('Recentering...')}
+            >
               HUD button
+            </button>
+            <button type="button" onClick={() => setSheetOpen(true)}>
+              Open sheet
             </button>
             <button type="button" onClick={() => setMode('embedded')}>
               Embedded demo
@@ -125,6 +192,15 @@ const App = () => {
               </button>
             )}
           </div>
+          {sheetOpen && (
+            <div className="sheet-modal" data-map-overlay>
+              <p className="sheet-title">Web sheet over map</p>
+              <p>Touches here stay on the Web layer, not the map.</p>
+              <button type="button" onClick={() => setSheetOpen(false)}>
+                Close sheet
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -132,10 +208,25 @@ const App = () => {
         <>
           <h1>@capgo/capacitor-native-map</h1>
           <p className="tagline">Google Maps on Android, Apple MapKit on iOS, Google Maps JS on web.</p>
+          {Capacitor.isNativePlatform() && (
+            <label className="engine-toggle">
+              <input
+                type="checkbox"
+                checked={engineEnabled}
+                onChange={(event) => setEngineEnabled(event.target.checked)}
+              />
+              WebView Native UI Engine
+            </label>
+          )}
           <button type="button" className="mode-switch" onClick={() => setMode('overlay')}>
             Try HTML overlay (toBack)
           </button>
-          <div ref={mapRef} className="map-container" />
+          <capacitor-native-map
+            ref={(el) => {
+              mapHostRef.current = el;
+            }}
+            className="map-container"
+          />
         </>
       )}
 

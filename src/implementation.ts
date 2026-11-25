@@ -69,6 +69,22 @@ export interface CreateMapArgs {
    * @default false
    */
   toBack?: boolean;
+  /**
+   * Enables [@webview-native-ui/engine](https://github.com/webview-native-ui/engine) so the map
+   * can scroll with the page and Web UI can cover the native layer with snapshot projection.
+   * Requires `@webview-native-ui/engine` in the app and matching native dependencies on iOS/Android.
+   * Ignored on web. When `false`, native and TypeScript behavior matches maps created without this flag.
+   *
+   * @default false
+   * @since 8.2.0
+   */
+  webViewNativeUIEngine?: boolean;
+  /**
+   * CSS selector for an existing Engine DOM projection host you manage yourself.
+   * When omitted and {@link CreateMapArgs.webViewNativeUIEngine} is enabled, the plugin
+   * creates a slot and sets this value automatically before calling native `create`.
+   */
+  projectionSelector?: string;
 }
 
 /**

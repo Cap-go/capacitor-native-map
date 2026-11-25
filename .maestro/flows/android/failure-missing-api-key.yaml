@@ -1,0 +1,13 @@
+appId: app.capgo.nativemap
+name: Android failure missing API key
+---
+- launchApp
+- tapOn:
+    text: "Embedded demo"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Missing API key"
+    timeout: 30000
+- assertVisible:
+    text: "Missing API key"

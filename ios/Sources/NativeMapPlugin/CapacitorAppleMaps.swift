@@ -165,6 +165,9 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
     var config: NativeMapConfig
     let mapView: MKMapView
     var toBack: Bool = false
+    var webViewNativeUIEngine = false
+    var projectionSelector: String?
+    var engineProjection: MapEngineProjection?
     var isMapVisible: Bool = true
 
     var markers: [String: NativeMapMarker] = [:]
@@ -230,12 +233,21 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
     /// a later render can retry it).
     var failedIconURLs: Set<String> = []
 
-    init(id: String, config: NativeMapConfig, delegate: NativeMapPlugin, toBack: Bool = false) {
+    init(
+        id: String,
+        config: NativeMapConfig,
+        delegate: NativeMapPlugin,
+        toBack: Bool = false,
+        webViewNativeUIEngine: Bool = false,
+        projectionSelector: String? = nil
+    ) {
         self.id = id
         self.config = config
         self.mapView = MKMapView()
         self.delegate = delegate
         self.toBack = toBack
+        self.webViewNativeUIEngine = webViewNativeUIEngine
+        self.projectionSelector = projectionSelector
         super.init()
         // Start clustered when the caller asked for it, so markers added later
         // cluster on their first render instead of flashing as individual pins.
@@ -317,11 +329,35 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
             }
 
             self.delegate?.notifyListeners("onMapReady", data: ["mapId": self.id])
+            self.setupEngineProjectionIfNeeded()
         }
+    }
+
+    func notifyEngineAppearanceIfNeeded() {
+        engineProjection?.notifyUpdate()
+    }
+
+    private func setupEngineProjectionIfNeeded() {
+        guard webViewNativeUIEngine,
+              let selector = projectionSelector,
+              let webView = delegate?.bridge?.webView else { return }
+        if engineProjection == nil {
+            engineProjection = MapEngineProjection(mapId: id)
+        }
+        engineProjection?.start(
+            webView: webView,
+            pluginJsName: delegate?.jsName ?? "NativeMap",
+            selector: selector,
+            mapVisible: isMapVisible,
+            eventSink: delegate,
+            viewProvider: { [weak self] in self?.mapView }
+        )
     }
 
     func destroy() {
         DispatchQueue.main.async {
+            self.engineProjection?.destroy()
+            self.engineProjection = nil
             self.dismissCallout()
             let webView = self.delegate?.bridge?.webView
             self.mapView.removeFromSuperview()
@@ -344,6 +380,7 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
             } else {
                 self.mapView.frame = CGRect(origin: .zero, size: bounds.size)
             }
+            self.engineProjection?.notifyUpdate()
         }
     }
 
@@ -351,6 +388,11 @@ public class Map: NSObject, UIGestureRecognizerDelegate {
         isMapVisible = visible
         runOnMainSync {
             self.mapView.isHidden = !visible
+            if visible {
+                self.engineProjection?.notifyShown()
+            } else {
+                self.engineProjection?.notifyHidden()
+            }
         }
     }
 
