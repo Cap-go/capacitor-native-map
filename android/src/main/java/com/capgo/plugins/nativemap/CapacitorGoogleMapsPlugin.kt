@@ -48,6 +48,15 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
     override fun load() {
         super.load()
 
+        runCatching { MapEngineInstall.ensureInstalled(bridge.webView) }
+                .onFailure {
+                    Log.w(
+                            tag,
+                            "WebView Native UI Engine channel not installed; enable webViewNativeUIEngine only when install succeeded",
+                            it,
+                    )
+                }
+
         MapsInitializer.initialize(this.context, MapsInitializer.Renderer.LATEST, this)
 
 

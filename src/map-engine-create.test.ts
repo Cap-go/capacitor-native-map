@@ -75,6 +75,34 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
     expect(document.querySelector('[data-native-map-engine-slot]')).toBeNull();
   });
 
+  test('forceCreate keeps projection slot for replacement', async () => {
+    const element = makeHostElement();
+    const first = await NativeMap.create({
+      id: 'force-engine',
+      apiKey: 'test',
+      config: { center: { lat: 0, lng: 0 }, zoom: 1 },
+      element,
+      webViewNativeUIEngine: true,
+    });
+    await waitForNativeCreate();
+
+    const second = await NativeMap.create({
+      id: 'force-engine',
+      forceCreate: true,
+      apiKey: 'test',
+      config: { center: { lat: 0, lng: 0 }, zoom: 1 },
+      element,
+      webViewNativeUIEngine: true,
+    });
+    await waitForNativeCreate();
+
+    expect(document.querySelector('[data-native-map-engine-slot="force-engine"]')).not.toBeNull();
+    const args = createImpl.mock.calls[createImpl.mock.calls.length - 1]?.[0] as Record<string, unknown>;
+    expect(args.projectionSelector).toBeTruthy();
+    await second.destroy();
+    await first.destroy().catch(() => undefined);
+  });
+
   test('enabled adds projection selector for native create', async () => {
     const element = makeHostElement();
     await NativeMap.create({

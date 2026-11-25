@@ -416,10 +416,7 @@ export class NativeMap {
       this.toBackLayout = undefined;
       this.toBack = false;
     }
-    if (this.webViewNativeUIEngine) {
-      removeEngineProjectionSlot(this.id);
-      this.webViewNativeUIEngine = false;
-    }
+    this.webViewNativeUIEngine = false;
 
     this.removeAllMapListeners();
   }
