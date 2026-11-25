@@ -14,9 +14,12 @@ final class MapEngineProjection {
     static let webEvent = "nativeMapEngineWeb"
 
     private let mapId: String
+    private weak var eventSink: CAPPlugin?
     #if canImport(WebViewNativeUIEngine)
     private var projection: NativeUIProjection?
     #endif
+
+    static let engineEventNames: Set<String> = [updateEvent, shownEvent, hiddenEvent, webEvent]
 
     init(mapId: String) {
         self.mapId = mapId
@@ -27,8 +30,10 @@ final class MapEngineProjection {
         pluginJsName: String,
         selector: String,
         mapVisible: Bool,
+        eventSink: CAPPlugin?,
         viewProvider: @escaping () -> UIView?
     ) {
+        self.eventSink = eventSink
         #if canImport(WebViewNativeUIEngine)
         guard projection == nil else { return }
         do {
@@ -60,25 +65,27 @@ final class MapEngineProjection {
         #endif
     }
 
-    func notifyUpdate() {
+    func receiveFromPlugin(eventName: String, data: [String: Any]) {
         #if canImport(WebViewNativeUIEngine)
-        guard projection != nil else { return }
-        projection?.receive(Self.updateEvent, data: ["mapId": mapId])
+        guard let incoming = data["mapId"] as? String, incoming == mapId else { return }
+        projection?.receive(eventName, data: data)
         #endif
+    }
+
+    func notifyUpdate() {
+        dispatchEngineEvent(Self.updateEvent)
     }
 
     func notifyShown() {
-        #if canImport(WebViewNativeUIEngine)
-        guard projection != nil else { return }
-        projection?.receive(Self.shownEvent, data: ["mapId": mapId])
-        #endif
+        dispatchEngineEvent(Self.shownEvent)
     }
 
     func notifyHidden() {
-        #if canImport(WebViewNativeUIEngine)
-        guard projection != nil else { return }
-        projection?.receive(Self.hiddenEvent, data: ["mapId": mapId])
-        #endif
+        dispatchEngineEvent(Self.hiddenEvent)
+    }
+
+    private func dispatchEngineEvent(_ event: String) {
+        eventSink?.notifyListeners(event, data: ["mapId": mapId])
     }
 
     func destroy() {

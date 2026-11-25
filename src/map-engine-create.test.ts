@@ -21,6 +21,7 @@ mock.module('./implementation', () => ({
 }));
 
 const { NativeMap } = await import('./map');
+const { projectionSelectorForMap } = await import('./engine-projection');
 
 function makeHostElement(): HTMLElement {
   const element = document.createElement('div');
@@ -85,7 +86,7 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
       webViewNativeUIEngine: true,
     });
     await waitForNativeCreate();
-    const slotBefore = document.querySelector('[data-native-map-engine-slot="force-engine"]');
+    const slotBefore = document.querySelector(projectionSelectorForMap('force-engine'));
 
     const second = await NativeMap.create({
       id: 'force-engine',
@@ -97,12 +98,31 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
     });
     await waitForNativeCreate();
 
-    const slotAfter = document.querySelector('[data-native-map-engine-slot="force-engine"]');
+    const slotAfter = document.querySelector(projectionSelectorForMap('force-engine'));
     expect(slotAfter).toBe(slotBefore);
     const args = createImpl.mock.calls[createImpl.mock.calls.length - 1]?.[0] as Record<string, unknown>;
-    expect(args.projectionSelector).toBe('[data-native-map-engine-slot="force-engine"]');
+    expect(args.projectionSelector).toBe(projectionSelectorForMap('force-engine'));
     await second.destroy();
     await first.destroy().catch(() => undefined);
+  });
+
+  test('honors manual projectionSelector when engine enabled', async () => {
+    const element = makeHostElement();
+    const managed = document.createElement('div');
+    managed.id = 'managed-map';
+    element.appendChild(managed);
+    await NativeMap.create({
+      id: 'manual-engine',
+      apiKey: 'test',
+      config: { center: { lat: 0, lng: 0 }, zoom: 1 },
+      element,
+      webViewNativeUIEngine: true,
+      projectionSelector: '#managed-map',
+    });
+    await waitForNativeCreate();
+    const args = createImpl.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(args.projectionSelector).toBe('#managed-map');
+    expect(document.querySelector('[data-native-map-engine-slot]')).toBeNull();
   });
 
   test('enabled adds projection selector for native create', async () => {
@@ -117,7 +137,7 @@ describe('NativeMap.create webViewNativeUIEngine', () => {
     await waitForNativeCreate();
     const args = createImpl.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(args.webViewNativeUIEngine).toBe(true);
-    expect(args.projectionSelector).toBe('[data-native-map-engine-slot="engine-map"]');
-    expect(document.querySelector('[data-native-map-engine-slot="engine-map"]')).not.toBeNull();
+    expect(args.projectionSelector).toBe(projectionSelectorForMap('engine-map'));
+    expect(document.querySelector(projectionSelectorForMap('engine-map'))).not.toBeNull();
   });
 });

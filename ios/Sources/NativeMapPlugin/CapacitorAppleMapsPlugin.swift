@@ -349,6 +349,23 @@ public class NativeMapPlugin: CAPPlugin, CAPBridgedPlugin, MKMapViewDelegate {
         map.handleMarkerSelection(marker)
     }
 
+    public override func notifyListeners(
+        _ eventName: String,
+        data: [String: Any]?,
+        retainUntilConsumed: Bool = false
+    ) {
+        if MapEngineProjection.engineEventNames.contains(eventName) {
+            mapsLock.lock()
+            let projections = maps.values.compactMap(\.engineProjection)
+            mapsLock.unlock()
+            let payload = data ?? [:]
+            for projection in projections {
+                projection.receiveFromPlugin(eventName: eventName, data: payload)
+            }
+        }
+        super.notifyListeners(eventName, data: data, retainUntilConsumed: retainUntilConsumed)
+    }
+
     // MARK: - Helpers
 
     func findMap(for mapView: MKMapView) -> Map? {

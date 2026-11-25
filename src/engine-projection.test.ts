@@ -14,7 +14,16 @@ describe('engine projection DOM', () => {
   });
 
   test('projectionSelectorForMap is stable', () => {
-    expect(projectionSelectorForMap('abc')).toBe(`[${NATIVE_MAP_ENGINE_SLOT_ATTR}="abc"]`);
+    expect(projectionSelectorForMap('abc')).toBe(`[${NATIVE_MAP_ENGINE_SLOT_ATTR}='abc']`);
+  });
+
+  test('projectionSelectorForMap escapes quotes in map id', () => {
+    const selector = projectionSelectorForMap('map"1');
+    expect(() => document.querySelector(selector)).not.toThrow();
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    ensureEngineProjectionSlot(host, 'map"1', false);
+    expect(document.querySelector(selector)).not.toBeNull();
   });
 
   test('ensureEngineProjectionSlot creates embedded host once', () => {

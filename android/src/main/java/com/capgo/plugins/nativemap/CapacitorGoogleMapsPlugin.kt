@@ -1193,6 +1193,15 @@ class CapacitorNativeMapPlugin : Plugin(), OnMapsSdkInitializedCallback {
         notifyListeners(event, data)
     }
 
+    override fun notifyListeners(eventName: String, data: JSObject, retainUntilConsumed: Boolean) {
+        if (eventName in MapEngineProjection.ENGINE_EVENT_NAMES) {
+            maps.values.forEach { map ->
+                map.engineProjection?.receiveFromPlugin(eventName, data)
+            }
+        }
+        super.notifyListeners(eventName, data, retainUntilConsumed)
+    }
+
     private fun handleError(call: PluginCall, e: Exception) {
         val error: NativeMapErrorObject = getErrorObject(e)
         Log.w(tag, error.toString())

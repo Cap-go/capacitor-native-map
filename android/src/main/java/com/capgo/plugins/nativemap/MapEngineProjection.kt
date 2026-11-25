@@ -9,6 +9,7 @@ import io.github.webview_native_ui.engine.NativeUIProjection
 
 class MapEngineProjection(private val mapId: String) {
     private var projection: NativeUIProjection? = null
+    private var emit: ((String, JSObject) -> Unit)? = null
 
     fun start(
         window: Window,
@@ -17,7 +18,9 @@ class MapEngineProjection(private val mapId: String) {
         projectionSelector: String,
         mapVisible: Boolean,
         viewProvider: () -> View?,
+        emit: (String, JSObject) -> Unit,
     ) {
+        this.emit = emit
         if (projection != null) {
             return
         }
@@ -49,16 +52,28 @@ class MapEngineProjection(private val mapId: String) {
         }
     }
 
+    fun receiveFromPlugin(eventName: String, data: JSObject) {
+        if (data.optString("mapId") != mapId) {
+            return
+        }
+        projection?.receive(eventName, data)
+    }
+
     fun notifyUpdate() {
-        projection?.receive(UPDATE_EVENT, JSObject().put("mapId", mapId))
+        dispatchEngineEvent(UPDATE_EVENT)
     }
 
     fun notifyShown() {
-        projection?.receive(SHOWN_EVENT, JSObject().put("mapId", mapId))
+        dispatchEngineEvent(SHOWN_EVENT)
     }
 
     fun notifyHidden() {
-        projection?.receive(HIDDEN_EVENT, JSObject().put("mapId", mapId))
+        dispatchEngineEvent(HIDDEN_EVENT)
+    }
+
+    private fun dispatchEngineEvent(event: String) {
+        val data = JSObject().put("mapId", mapId)
+        emit?.invoke(event, data)
     }
 
     fun close() {
@@ -72,6 +87,7 @@ class MapEngineProjection(private val mapId: String) {
         const val SHOWN_EVENT = "nativeMapEngineShown"
         const val HIDDEN_EVENT = "nativeMapEngineHidden"
         const val WEB_EVENT = "nativeMapEngineWeb"
+        val ENGINE_EVENT_NAMES = setOf(UPDATE_EVENT, SHOWN_EVENT, HIDDEN_EVENT, WEB_EVENT)
     }
 }
 

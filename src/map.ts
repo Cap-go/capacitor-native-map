@@ -137,6 +137,7 @@ export class NativeMap {
   private webViewNativeUIEngine = false;
   private toBackLayout?: { x: number; y: number; width: number; height: number };
   private windowResizeHandler?: () => void;
+  private engineScrollHandler?: () => void;
   private resizeObserver: ResizeObserver | null = null;
   private orientationChangeTimeoutId?: ReturnType<typeof setTimeout>;
   private orientationChangeHandler = (): void => {
@@ -317,6 +318,11 @@ export class NativeMap {
       if (toBack) {
         newMap.windowResizeHandler = onResize;
         window.addEventListener('resize', onResize);
+        if (webViewNativeUIEngine) {
+          const onEngineScroll = (): void => newMap.updateMapBounds();
+          newMap.engineScrollHandler = onEngineScroll;
+          window.addEventListener('scroll', onEngineScroll, { passive: true });
+        }
       } else {
         newMap.resizeObserver = new ResizeObserver(() => {
           if (newMap.element != null) {
@@ -355,6 +361,10 @@ export class NativeMap {
         if (newMap.windowResizeHandler) {
           window.removeEventListener('resize', newMap.windowResizeHandler);
           newMap.windowResizeHandler = undefined;
+        }
+        if (newMap.engineScrollHandler) {
+          window.removeEventListener('scroll', newMap.engineScrollHandler);
+          newMap.engineScrollHandler = undefined;
         }
         newMap.disableScrolling();
       }
@@ -412,6 +422,10 @@ export class NativeMap {
       if (this.windowResizeHandler) {
         window.removeEventListener('resize', this.windowResizeHandler);
         this.windowResizeHandler = undefined;
+      }
+      if (this.engineScrollHandler) {
+        window.removeEventListener('scroll', this.engineScrollHandler);
+        this.engineScrollHandler = undefined;
       }
       this.disableScrolling();
     }
@@ -697,6 +711,10 @@ export class NativeMap {
         window.removeEventListener('resize', this.windowResizeHandler);
         this.windowResizeHandler = undefined;
       }
+      if (this.engineScrollHandler) {
+        window.removeEventListener('scroll', this.engineScrollHandler);
+        this.engineScrollHandler = undefined;
+      }
     }
 
     if (this.toBack) {
@@ -882,7 +900,20 @@ export class NativeMap {
 
   handleScrollEvent = (): void => this.updateMapBounds();
 
+  private syncEngineToBackSlotOnScroll(): void {
+    if (!this.webViewNativeUIEngine || !this.toBack || !this.toBackLayout) {
+      return;
+    }
+    syncEngineProjectionSlotLayout(this.id, {
+      x: this.toBackLayout.x + window.scrollX,
+      y: this.toBackLayout.y + window.scrollY,
+      width: this.toBackLayout.width,
+      height: this.toBackLayout.height,
+    });
+  }
+
   private updateMapBounds(): void {
+    this.syncEngineToBackSlotOnScroll();
     if (this.element) {
       CapacitorNativeMap.onScroll({
         id: this.id,
