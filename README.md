@@ -30,8 +30,8 @@ Native maps for Capacitor: Google Maps on Android, Apple MapKit on iOS, and a we
     <th>Android · Google Maps</th>
   </tr>
   <tr>
-    <td><img src="assets/readme-demo-ios.webp" width="260" alt="Demo tour recorded on the iOS simulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
-    <td><img src="assets/readme-demo-android.webp" width="260" alt="Demo tour recorded on the Android emulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
+    <td><img src="https://raw.githubusercontent.com/Cap-go/capacitor-native-map/main/assets/readme-demo-ios.webp" width="260" alt="Demo tour recorded on the iOS simulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
+    <td><img src="https://raw.githubusercontent.com/Cap-go/capacitor-native-map/main/assets/readme-demo-android.webp" width="260" alt="Demo tour recorded on the Android emulator: store locator, delivery zones, route, clustering, 3D camera and map types" /></td>
   </tr>
 </table>
 
